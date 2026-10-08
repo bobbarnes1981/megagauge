@@ -14,14 +14,18 @@ ELM327 elm327;
 #define ELM_BAUD 115200
 
 typedef enum {
-  ENG_RPM,
-  SPEED
+  ENG_RPM = 0,
+  SPEED = 1,
+  COOLANT = 2,
+  OIL = 3
 } obd_pid_states;
 
 obd_pid_states obd_state = SPEED;
 
 float rpm = 0;
 float mph = 0;
+float coolant = 0;
+float oil = 0;
 
 uint8_t mac_address[6] = {
   0xC8, 0x2E, 0x18, 0xF7, 0x95, 0xFE
@@ -74,6 +78,30 @@ void loop() {
       if (elm327.nb_rx_state == ELM_SUCCESS) {
         DEBUG_PORT.print("mph: ");
         DEBUG_PORT.println(mph);
+        obd_state = COOLANT;
+      } else if (elm327.nb_rx_state != ELM_GETTING_MSG) {
+        elm327.printError();
+        obd_state = COOLANT;
+      }
+      break;
+
+    case COOLANT:
+      coolant = elm327.engineCoolantTemp();
+      if (elm327.nb_rx_state == ELM_SUCCESS) {
+        DEBUG_PORT.print("w-temp: ");
+        DEBUG_PORT.println(coolant);
+        obd_state = OIL;
+      } else if (elm327.nb_rx_state != ELM_GETTING_MSG) {
+        elm327.printError();
+        obd_state = OIL;
+      }
+      break;
+
+    case OIL:
+      oil = elm327.oilTemp();
+      if (elm327.nb_rx_state == ELM_SUCCESS) {
+        DEBUG_PORT.print("o-temp: ");
+        DEBUG_PORT.println(coolant);
         obd_state = ENG_RPM;
       } else if (elm327.nb_rx_state != ELM_GETTING_MSG) {
         elm327.printError();
