@@ -30,13 +30,13 @@ uint8_t mac_address[6] = {
 
 void setup() {
   DEBUG_PORT.begin(DEBUG_BAUD);
-  ELM_PORT.begin("ESP32", DEBUG);
+  ELM_PORT.begin("ESP32", true); // ismaster=true
 
   DEBUG_PORT.println("Attempting to connect to ELM327");
 
   if (!ELM_PORT.connect(mac_address, 1, ESP_SPP_SEC_NONE, ESP_SPP_ROLE_MASTER))
   {
-    //ELM_PORT.end();
+    ELM_PORT.end();
     //ELM_PORT.unpairDevice(mac_address);
 
     DEBUG_PORT.println("Couldn't connect to OBD scanner");
