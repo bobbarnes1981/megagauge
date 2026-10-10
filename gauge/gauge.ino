@@ -1,35 +1,55 @@
 #include "BluetoothSerial.h"
 #include "ELMduino.h"
 
-const bool DEBUG = false;
-const int TIMEOUT = 2000;
+const bool DEBUG            = false;
+const int ELM_TIMEOUT_SECS  = 2000; // 2 secs
+const int ELM_PROTOCOL      = 0;    // 0 = Automatic
 
 BluetoothSerial SerialBT;
 ELM327 elm327;
 
 #define DEBUG_PORT Serial
 #define DEBUG_BAUD 115200
+
 #define ELM_PORT SerialBT
 #define ELM_BAUD 115200
 
-#define NUM_STATES 4
+#define PID_NUM_STATES 5
 
-constexpr int8_t ENG_RPM  = 0;
-constexpr int8_t SPEED    = 1;
-constexpr int8_t COOLANT  = 2;
-constexpr int8_t OIL      = 3;
+constexpr int8_t PID_ENG_RPM  = 0;
+constexpr int8_t PID_SPEED    = 1;
+constexpr int8_t PID_COOLANT  = 2;
+constexpr int8_t PID_OIL      = 3;
+constexpr int8_t PID_TEMP     = 4;
+int8_t obd_state = PID_ENG_RPM;
 
-int8_t obd_state = ENG_RPM;
+#define UI_NUM_STATES 2
 
+constexpr int8_t UI_DISPLAY   = 0;
+constexpr int8_t UI_CONNECT   = 1;
+
+int8_t ui_state = UI_DISPLAY;
+
+// data to display
 float rpm = 0;
 float mph = 0;
 float coolant = 0;
 float oil = 0;
+float temp = 0;
 
+/*
+ * TODO: maybe store millis since last successful read so we can
+ * display a warning if the data is stale
+ */
+
+// mac address to connect to
 uint8_t mac_address[6] = {
   0xC8, 0x2E, 0x18, 0xF7, 0x95, 0xFE
 };
 
+/*
+ * Connect the bluetooth serial and initialise the elm connection
+ */
 bool connect() {
   DEBUG_PORT.print("Attempting to connect to ELM327... ");
   if (!ELM_PORT.connect(mac_address, 1, ESP_SPP_SEC_NONE, ESP_SPP_ROLE_MASTER))
@@ -41,7 +61,7 @@ bool connect() {
   DEBUG_PORT.println("SUCCESS");
 
   DEBUG_PORT.print("Initialising ELM327... ");
-  if (!elm327.begin(ELM_PORT, DEBUG, 2000, 0)) { // 2 sec timeout, 0=automatic protocol detection
+  if (!elm327.begin(ELM_PORT, DEBUG, ELM_TIMEOUT_SECS, ELM_PROTOCOL)) { // 2 sec timeout, 0=automatic protocol detection
     DEBUG_PORT.println("FAIL");
     return false;
   }
@@ -50,9 +70,12 @@ bool connect() {
   return true;
 }
 
+/*
+ * Increment and wrap the current pid state
+ */
 void incrementCheck() {
   obd_state++;
-  if (obd_state > NUM_STATES-1) {
+  if (obd_state > PID_NUM_STATES-1) {
     obd_state = 0;
   }
 }
@@ -156,32 +179,55 @@ void checkOil() {
   }
 }
 
+/*
+ * Request ambient temperature
+ */
+void checkTemp() {
+  temp = elm327.ambientAirTemp();
+  if (checkElm()) {
+    DEBUG_PORT.print("a-temp: ");
+    DEBUG_PORT.println(temp);
+  }
+}
+
+/*
+ * Setup the ports
+ */
 void setup() {
   DEBUG_PORT.begin(DEBUG_BAUD);
   ELM_PORT.begin("ESP32", true); // ismaster=true
 
+  /*
+   * TODO: connect should maybe happen in the main loop once we have a
+   * UI to choose the adapter to conenct to
+   */
   connect();
 }
 
 void loop() {
+  // try to connect if not already connected
   if (!ELM_PORT.connected()) {
     DEBUG_PORT.println("Disconnected...");
     connect();
   }
 
+  // run OBD2 logic if connected
   if (ELM_PORT.connected()) {
     switch (obd_state) {
-      case ENG_RPM:
+      case PID_ENG_RPM:
         checkEngRpm();
         break;
-      case SPEED:
+      case PID_SPEED:
         checkSpeed();
         break;
-      case COOLANT:
+      case PID_COOLANT:
         checkCoolant();
         break;
-      case OIL:
+      case PID_OIL:
         checkOil();
+        break;
+      case PID_TEMP:
+        checkTemp();
         break;
     }
   }
