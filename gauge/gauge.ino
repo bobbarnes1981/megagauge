@@ -288,6 +288,8 @@ void loop() {
   }
 
   if (millis() - debug_last_update > DEBUG_UPDATE_MS) {
+    debug_last_update = millis();
+
     DEBUG_PORT.print("rpm: ");
     DEBUG_PORT.print(pid_value[PID_ENG_RPM]);
     if (millis() - pid_last_read[PID_ENG_RPM] > pid_stale_time[PID_ENG_RPM]) {
