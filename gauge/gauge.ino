@@ -56,7 +56,7 @@ unsigned long pid_last_read[] = {
 /*
  * millis between update requests
  */
-uint8_t pid_update_time[] = {
+int pid_update_time[] = {
   250,  // eng rpm
   100,  // speed
   2000, // coolant
@@ -67,7 +67,7 @@ uint8_t pid_update_time[] = {
 /*
  * millis until considered stale
  */
-uint8_t pid_stale_time[] = {
+int pid_stale_time[] = {
   1000,  // eng rpm
   500,   // speed
   5000,  // coolant
