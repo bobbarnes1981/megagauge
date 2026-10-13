@@ -31,48 +31,21 @@ constexpr int8_t UI_CONNECT   = 1;
 
 int8_t ui_state = UI_DISPLAY;
 
-/*
- * data to display
- */
-float pid_value[] = {
-  0, // eng rpm
-  0, // speed
-  0, // coolant
-  0, // oil
-  0  // ambient
+struct PIDInfo {
+  const char* name;
+  const char* suffix;
+  float value;
+  int update_time;
+  int stale_time;
+  unsigned long last_read;
 };
 
-/*
- * last read time for pid
- */
-unsigned long pid_last_read[] = {
-  0, // eng rpm
-  0, // speed
-  0, // coolant
-  0, // oil
-  0  // ambient
-};
-
-/*
- * millis between update requests
- */
-int pid_update_time[] = {
-  250,  // eng rpm
-  100,  // speed
-  2000, // coolant
-  2000, // oil
-  5000  // ambient
-};
-
-/*
- * millis until considered stale
- */
-int pid_stale_time[] = {
-  1000,  // eng rpm
-  500,   // speed
-  5000,  // coolant
-  5000,  // oil
-  10000  // ambient
+PIDInfo pid_info[] = {
+  { "RPM",     "",    0,  250,  1000, 0 },
+  { "Speed",   "mph", 0,  100,   500, 0 },
+  { "Coolant", "c",   0, 2000,  5000, 0 },
+  { "Oil",     "c",   0, 2000,  5000, 0 },
+  { "Ambient", "c",   0, 5000, 10000, 0 }
 };
 
 // mac address to connect to
@@ -174,14 +147,14 @@ void printError(int8_t nb_rx_state) {
  * Request engine rpm
  */
 void checkEngRpm() {
-  if (millis() - pid_last_read[PID_ENG_RPM] < pid_update_time[PID_ENG_RPM]) {
+  if (millis() - pid_info[PID_ENG_RPM].last_read < pid_info[PID_ENG_RPM].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.rpm();
   if (checkElm()) {
-    pid_last_read[PID_ENG_RPM] = millis();
-    pid_value[PID_ENG_RPM] = val;
+    pid_info[PID_ENG_RPM].last_read = millis();
+    pid_info[PID_ENG_RPM].value = val;
   }
 }
 
@@ -189,14 +162,14 @@ void checkEngRpm() {
  * Request speed in mph
  */
 void checkSpeed() {
-  if (millis() - pid_last_read[PID_SPEED] < pid_update_time[PID_SPEED]) {
+  if (millis() - pid_info[PID_SPEED].last_read < pid_info[PID_SPEED].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.mph();
   if (checkElm()) {
-    pid_last_read[PID_SPEED] = millis();
-    pid_value[PID_SPEED] = val;
+    pid_info[PID_SPEED].last_read = millis();
+    pid_info[PID_SPEED].value = val;
   }
 }
 
@@ -204,14 +177,14 @@ void checkSpeed() {
  * Request coolant temperature
  */
 void checkCoolant() {
-  if (millis() - pid_last_read[PID_COOLANT] < pid_update_time[PID_COOLANT]) {
+  if (millis() - pid_info[PID_COOLANT].last_read < pid_info[PID_COOLANT].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.engineCoolantTemp();
   if (checkElm()) {
-    pid_last_read[PID_COOLANT] = millis();
-    pid_value[PID_COOLANT] = val;
+    pid_info[PID_COOLANT].last_read = millis();
+    pid_info[PID_COOLANT].value = val;
   }
 }
 
@@ -219,14 +192,14 @@ void checkCoolant() {
  * Request oil temperature
  */
 void checkOil() {
-  if (millis() - pid_last_read[PID_OIL] < pid_update_time[PID_OIL]) {
+  if (millis() - pid_info[PID_OIL].last_read < pid_info[PID_OIL].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.oilTemp();
   if (checkElm()) {
-    pid_last_read[PID_OIL] = millis();
-    pid_value[PID_OIL] = val;
+    pid_info[PID_OIL].last_read = millis();
+    pid_info[PID_OIL].value = val;
   }
 }
 
@@ -234,14 +207,14 @@ void checkOil() {
  * Request ambient temperature
  */
 void checkTemp() {
-  if (millis() - pid_last_read[PID_TEMP] < pid_update_time[PID_TEMP]) {
+  if (millis() - pid_info[PID_TEMP].last_read < pid_info[PID_TEMP].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.ambientAirTemp();
   if (checkElm()) {
-    pid_last_read[PID_TEMP] = millis();
-    pid_value[PID_TEMP] = val;
+    pid_info[PID_TEMP].last_read = millis();
+    pid_info[PID_TEMP].value = val;
   }
 }
 
@@ -290,40 +263,42 @@ void loop() {
   if (millis() - debug_last_update > DEBUG_UPDATE_MS) {
     debug_last_update = millis();
 
-    DEBUG_PORT.print("rpm: ");
-    DEBUG_PORT.print(pid_value[PID_ENG_RPM]);
-    if (millis() - pid_last_read[PID_ENG_RPM] > pid_stale_time[PID_ENG_RPM]) {
+    DEBUG_PORT.print(pid_info[PID_ENG_RPM].name);
+    DEBUG_PORT.print(pid_info[PID_ENG_RPM].value);
+    DEBUG_PORT.print(pid_info[PID_ENG_RPM].suffix);
+    if (millis() - pid_info[PID_ENG_RPM].last_read > pid_info[PID_ENG_RPM].stale_time) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
     
-    DEBUG_PORT.print("mph: ");
-    DEBUG_PORT.print(pid_value[PID_SPEED]);
-    if (millis() - pid_last_read[PID_SPEED] > pid_stale_time[PID_SPEED]) {
+    DEBUG_PORT.print(pid_info[PID_SPEED].name);
+    DEBUG_PORT.print(pid_info[PID_SPEED].value);
+    DEBUG_PORT.print(pid_info[PID_SPEED].suffix);
+    if (millis() - pid_info[PID_SPEED].last_read > pid_info[PID_SPEED].stale_time) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
     
-    DEBUG_PORT.print("water: ");
-    DEBUG_PORT.print(pid_value[PID_COOLANT]);
-    DEBUG_PORT.print("c");
-    if (millis() - pid_last_read[PID_COOLANT] > pid_stale_time[PID_COOLANT]) {
+    DEBUG_PORT.print(pid_info[PID_COOLANT].name);
+    DEBUG_PORT.print(pid_info[PID_COOLANT].value);
+    DEBUG_PORT.print(pid_info[PID_COOLANT].suffix);
+    if (millis() - pid_info[PID_COOLANT].last_read > pid_info[PID_COOLANT].stale_time) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
     
-    DEBUG_PORT.print("oil: ");
-    DEBUG_PORT.print(pid_value[PID_OIL]);
-    DEBUG_PORT.print("c");
-    if (millis() - pid_last_read[PID_OIL] > pid_stale_time[PID_OIL]) {
+    DEBUG_PORT.print(pid_info[PID_OIL].name);
+    DEBUG_PORT.print(pid_info[PID_OIL].value);
+    DEBUG_PORT.print(pid_info[PID_OIL].suffix);
+    if (millis() - pid_info[PID_OIL].last_read > pid_info[PID_OIL].stale_time) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
     
-    DEBUG_PORT.print("ambient: ");
-    DEBUG_PORT.print(pid_value[PID_TEMP]);
-    DEBUG_PORT.print("c");
-    if (millis() - pid_last_read[PID_TEMP] > pid_stale_time[PID_TEMP]) {
+    DEBUG_PORT.print(pid_info[PID_TEMP].name);
+    DEBUG_PORT.print(pid_info[PID_TEMP].value);
+    DEBUG_PORT.print(pid_info[PID_TEMP].suffix);
+    if (millis() - pid_info[PID_TEMP].last_read > pid_info[PID_TEMP].stale_time) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.println("");
