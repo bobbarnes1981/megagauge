@@ -10,6 +10,7 @@ ELM327 elm327;
 
 #define DEBUG_PORT Serial
 #define DEBUG_BAUD 115200
+#define DEBUG_UPDATE_MS 1000
 
 #define ELM_PORT SerialBT
 #define ELM_BAUD 115200
@@ -30,22 +31,56 @@ constexpr int8_t UI_CONNECT   = 1;
 
 int8_t ui_state = UI_DISPLAY;
 
-// data to display
-float rpm = 0;
-float mph = 0;
-float coolant = 0;
-float oil = 0;
-float temp = 0;
+/*
+ * data to display
+ */
+float pid_value[] = {
+  0, // eng rpm
+  0, // speed
+  0, // coolant
+  0, // oil
+  0  // ambient
+};
 
 /*
- * TODO: maybe store millis since last successful read so we can
- * display a warning if the data is stale
+ * last read time for pid
  */
+unsigned long pid_last_read[] = {
+  0, // eng rpm
+  0, // speed
+  0, // coolant
+  0, // oil
+  0  // ambient
+};
+
+/*
+ * millis between update requests
+ */
+uint8_t pid_update_time[] = {
+  250,  // eng rpm
+  100,  // speed
+  2000, // coolant
+  2000, // oil
+  5000  // ambient
+};
+
+/*
+ * millis until considered stale
+ */
+uint8_t pid_stale_time[] = {
+  1000,  // eng rpm
+  500,   // speed
+  5000,  // coolant
+  5000,  // oil
+  10000  // ambient
+}
 
 // mac address to connect to
 uint8_t mac_address[6] = {
   0xC8, 0x2E, 0x18, 0xF7, 0x95, 0xFE
 };
+
+unsigned long debug_last_update = 0;
 
 /*
  * Connect the bluetooth serial and initialise the elm connection
@@ -139,10 +174,14 @@ void printError(int8_t nb_rx_state) {
  * Request engine rpm
  */
 void checkEngRpm() {
-  rpm = elm327.rpm();
+  if (millis() - pid_last_read[PID_ENG_RPM] < pid_update_time[PID_ENG_RPM]) {
+    incrementCheck();
+    return;
+  }
+  float val = elm327.rpm();
   if (checkElm()) {
-    DEBUG_PORT.print("rpm: ");
-    DEBUG_PORT.println(rpm);
+    pid_last_read[PID_ENG_RPM] = millis();
+    pid_value[PID_ENG_RPM] = val;
   }
 }
 
@@ -150,10 +189,14 @@ void checkEngRpm() {
  * Request speed in mph
  */
 void checkSpeed() {
-  mph = elm327.mph();
+  if (millis() - pid_last_read[PID_SPEED] < pid_update_time[PID_SPEED]) {
+    incrementCheck();
+    return;
+  }
+  float val = elm327.mph();
   if (checkElm()) {
-    DEBUG_PORT.print("mph: ");
-    DEBUG_PORT.println(mph);
+    pid_last_read[PID_SPEED] = millis();
+    pid_value[PID_SPEED] = val;
   }
 }
 
@@ -161,10 +204,14 @@ void checkSpeed() {
  * Request coolant temperature
  */
 void checkCoolant() {
-  coolant = elm327.engineCoolantTemp();
+  if (millis() - pid_last_read[PID_COOLANT] < pid_update_time[PID_COOLANT]) {
+    incrementCheck();
+    return;
+  }
+  float val = elm327.engineCoolantTemp();
   if (checkElm()) {
-    DEBUG_PORT.print("w-temp: ");
-    DEBUG_PORT.println(coolant);
+    pid_last_read[PID_COOLANT] = millis();
+    pid_value[PID_COOLANT] = val;
   }
 }
 
@@ -172,10 +219,14 @@ void checkCoolant() {
  * Request oil temperature
  */
 void checkOil() {
-  oil = elm327.oilTemp();
+  if (millis() - pid_last_read[PID_OIL] < pid_update_time[PID_OIL]) {
+    incrementCheck();
+    return;
+  }
+  float val = elm327.oilTemp();
   if (checkElm()) {
-    DEBUG_PORT.print("o-temp: ");
-    DEBUG_PORT.println(coolant);
+    pid_last_read[PID_OIL] = millis();
+    pid_value[PID_OIL] = val;
   }
 }
 
@@ -183,10 +234,14 @@ void checkOil() {
  * Request ambient temperature
  */
 void checkTemp() {
-  temp = elm327.ambientAirTemp();
+  if (millis() - pid_last_read[PID_TEMP] < pid_update_time[PID_TEMP]) {
+    incrementCheck();
+    return;
+  }
+  float val = elm327.ambientAirTemp();
   if (checkElm()) {
-    DEBUG_PORT.print("a-temp: ");
-    DEBUG_PORT.println(temp);
+    pid_last_read[PID_TEMP] = millis();
+    pid_value[PID_TEMP] = val;
   }
 }
 
@@ -230,5 +285,45 @@ void loop() {
         checkTemp();
         break;
     }
+  }
+
+  if (millis() - debug_last_update > DEBUG_UPDATE_MS) {
+    DEBUG_PORT.print("rpm: ");
+    DEBUG_PORT.print(pid_value[PID_ENG_RPM);
+    if (millis() - pid_last_read[PID_ENG_RPM] > pid_stale_time[PID_ENG_RPM]) {
+      DEBUGPORT.print("*");
+    }
+    DEBYG_PORT.print(" ");
+    
+    DEBUG_PORT.print("mph: ");
+    DEBUG_PORT.print(pid_value[PID_SPEED);
+    if (millis() - pid_last_read[PID_SPEED] > pid_stale_time[PID_SPEED]) {
+      DEBUGPORT.print("*");
+    }
+    DEBYG_PORT.print(" ");
+    
+    DEBUG_PORT.print("water: ");
+    DEBUG_PORT.print(pid_value[PID_COOLANT);
+    DEBUG_PORT.print("c");
+    if (millis() - pid_last_read[PID_COOLANT] > pid_stale_time[PID_COOLANT]) {
+      DEBUGPORT.print("*");
+    }
+    DEBYG_PORT.print(" ");
+    
+    DEBUG_PORT.print("oil: ");
+    DEBUG_PORT.print(pid_value[PID_OIL);
+    DEBUG_PORT.print("c");
+    if (millis() - pid_last_read[PID_OIL] > pid_stale_time[PID_OIL]) {
+      DEBUGPORT.print("*");
+    }
+    DEBYG_PORT.print(" ");
+    
+    DEBUG_PORT.print("ambient: ");
+    DEBUG_PORT.print(pid_value[PID_TEMP);
+    DEBUG_PORT.print("c");
+    if (millis() - pid_last_read[PID_TEMP] > pid_stale_time[PID_TEMP]) {
+      DEBUGPORT.print("*");
+    }
+    DEBUG_PORT.println("");
   }
 }
