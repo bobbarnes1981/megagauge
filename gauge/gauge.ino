@@ -291,14 +291,14 @@ void loop() {
     DEBUG_PORT.print("rpm: ");
     DEBUG_PORT.print(pid_value[PID_ENG_RPM);
     if (millis() - pid_last_read[PID_ENG_RPM] > pid_stale_time[PID_ENG_RPM]) {
-      DEBUGPORT.print("*");
+      DEBUG_PORT.print("*");
     }
     DEBYG_PORT.print(" ");
     
     DEBUG_PORT.print("mph: ");
     DEBUG_PORT.print(pid_value[PID_SPEED);
     if (millis() - pid_last_read[PID_SPEED] > pid_stale_time[PID_SPEED]) {
-      DEBUGPORT.print("*");
+      DEBUG_PORT.print("*");
     }
     DEBYG_PORT.print(" ");
     
@@ -306,7 +306,7 @@ void loop() {
     DEBUG_PORT.print(pid_value[PID_COOLANT);
     DEBUG_PORT.print("c");
     if (millis() - pid_last_read[PID_COOLANT] > pid_stale_time[PID_COOLANT]) {
-      DEBUGPORT.print("*");
+      DEBUG_PORT.print("*");
     }
     DEBYG_PORT.print(" ");
     
@@ -314,7 +314,7 @@ void loop() {
     DEBUG_PORT.print(pid_value[PID_OIL);
     DEBUG_PORT.print("c");
     if (millis() - pid_last_read[PID_OIL] > pid_stale_time[PID_OIL]) {
-      DEBUGPORT.print("*");
+      DEBUG_PORT.print("*");
     }
     DEBYG_PORT.print(" ");
     
@@ -322,7 +322,7 @@ void loop() {
     DEBUG_PORT.print(pid_value[PID_TEMP);
     DEBUG_PORT.print("c");
     if (millis() - pid_last_read[PID_TEMP] > pid_stale_time[PID_TEMP]) {
-      DEBUGPORT.print("*");
+      DEBUG_PORT.print("*");
     }
     DEBUG_PORT.println("");
   }
