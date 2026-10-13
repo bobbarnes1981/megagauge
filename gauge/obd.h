@@ -18,19 +18,12 @@ extern ELM327 elm327;
 #define ELM_BAUD 115200
 
 #define PID_NUM_STATES 5
-
 constexpr int8_t PID_ENG_RPM  = 0;
 constexpr int8_t PID_SPEED    = 1;
 constexpr int8_t PID_COOLANT  = 2;
 constexpr int8_t PID_OIL      = 3;
 constexpr int8_t PID_TEMP     = 4;
 extern int8_t obd_state;
-
-#define UI_NUM_STATES 2
-
-constexpr int8_t UI_DISPLAY   = 0;
-constexpr int8_t UI_CONNECT   = 1;
-extern int8_t ui_state;
 
 struct PIDInfo {
   const char* name;
@@ -43,14 +36,6 @@ struct PIDInfo {
 
 extern PIDInfo pid_info[];
 
-extern unsigned long debug_last_update;
-
-bool connect();
-
-void checkEngRpm();
-void checkSpeed();
-void checkCoolant();
-void checkOil();
-void checkTemp();
+void runObd();
 
 #endif

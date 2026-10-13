@@ -1,7 +1,11 @@
+#include <debug.h>
 #include <obd.h>
 
 #include "BluetoothSerial.h"
 
+/*
+ * defines the PIDs to request and their relevant data
+ */
 PIDInfo pid_info[] = {
   { "RPM",     "",    0,  250,  1000, 0 },
   { "Speed",   "mph", 0,  100,   500, 0 },
@@ -11,7 +15,6 @@ PIDInfo pid_info[] = {
 };
 
 int8_t obd_state = PID_ENG_RPM;
-int8_t ui_state = UI_DISPLAY;
 
 BluetoothSerial SerialBT;
 
@@ -21,8 +24,7 @@ ELM327 elm327;
 uint8_t mac_address[6] = {
   0xC8, 0x2E, 0x18, 0xF7, 0x95, 0xFE
 };
-
-unsigned long debug_last_update = 0;
+bool mac_configured = true;
 
 /*
  * Print the elm327 state to the DEBUG_PORT
@@ -65,6 +67,11 @@ void printError(int8_t nb_rx_state) {
  * Connect the bluetooth serial and initialise the elm connection
  */
 bool connect() {
+  if (!mac_configured) {
+    DEBUG_PORT.println("MAC not configured.");
+    return false;
+  }
+
   DEBUG_PORT.print("Attempting to connect to ELM327... ");
   if (!ELM_PORT.connect(mac_address, 1, ESP_SPP_SEC_NONE, ESP_SPP_ROLE_MASTER))
   {
@@ -184,5 +191,37 @@ void checkTemp() {
   if (checkElm()) {
     pid_info[PID_TEMP].last_read = millis();
     pid_info[PID_TEMP].value = val;
+  }
+}
+
+/*
+ *
+ */
+void runObd() {
+  // try to connect if not already connected
+  if (!ELM_PORT.connected()) {
+    DEBUG_PORT.println("Disconnected...");
+    connect();
+  }
+
+  // run OBD2 logic if connected
+  if (ELM_PORT.connected()) {
+    switch (obd_state) {
+      case PID_ENG_RPM:
+        checkEngRpm();
+        break;
+      case PID_SPEED:
+        checkSpeed();
+        break;
+      case PID_COOLANT:
+        checkCoolant();
+        break;
+      case PID_OIL:
+        checkOil();
+        break;
+      case PID_TEMP:
+        checkTemp();
+        break;
+    }
   }
 }
