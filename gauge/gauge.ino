@@ -73,7 +73,7 @@ uint8_t pid_stale_time[] = {
   5000,  // coolant
   5000,  // oil
   10000  // ambient
-}
+};
 
 // mac address to connect to
 uint8_t mac_address[6] = {
