@@ -5,7 +5,11 @@
 
 unsigned long debug_last_update = 0;
 
-void showDebug() {
+void debug_setup() {
+  DEBUG_PORT.begin(DEBUG_BAUD);
+}
+
+void debug_show() {
   unsigned long m = millis();
   if (m - debug_last_update > DEBUG_UPDATE_MS) {
     debug_last_update = m;

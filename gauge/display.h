@@ -9,8 +9,8 @@ constexpr int8_t UI_SETTINGS  = 1;
 constexpr int8_t UI_BTSCAN    = 2;
 extern int8_t ui_state;
 
-void renderDisplay();
-void renderSettings();
-void renderBTScan();
+void display_status();
+void display_settings();
+void display_btscan();
 
 #endif

@@ -91,6 +91,10 @@ bool connect() {
   return true;
 }
 
+void obd_setup() {
+  ELM_PORT.begin("MegaGauge", true); // ismaster=true
+}
+
 /*
  * Increment and wrap the current pid state
  */
@@ -197,7 +201,7 @@ void checkTemp() {
 /*
  *
  */
-void runObd() {
+void obd_run() {
   // try to connect if not already connected
   if (!ELM_PORT.connected()) {
     DEBUG_PORT.println("Disconnected...");

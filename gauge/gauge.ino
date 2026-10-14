@@ -7,30 +7,30 @@
  * Setup the ports
  */
 void setup() {
-  DEBUG_PORT.begin(DEBUG_BAUD);
-  ELM_PORT.begin("MegaGauge", true); // ismaster=true
+  debug_setup();
+  obd_setup();
 }
 
 void loop() {
   switch (ui_state) {
     case UI_DISPLAY:
       {
-        runObd();
-        renderDisplay();
+        obd_run();
+        display_status();
       }
       break;
     
     case UI_SETTINGS:
       {
-        renderSettings();
+        display_settings();
       }
       break;
 
     case UI_BTSCAN:
       {
-        renderBTScan();
+        display_btscan();
       }
       break;
   }
-  showDebug();
+  debug_show();
 }

@@ -7,6 +7,7 @@
 #define DEBUG_BAUD 115200
 #define DEBUG_UPDATE_MS 1000
 
-void showDebug();
+void debug_setup();
+void debug_show();
 
 #endif

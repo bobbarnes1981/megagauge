@@ -36,6 +36,7 @@ struct PIDInfo {
 
 extern PIDInfo pid_info[];
 
-void runObd();
+void obd_setup();
+void obd_run();
 
 #endif
