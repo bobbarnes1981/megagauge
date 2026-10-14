@@ -17,12 +17,13 @@ extern ELM327 elm327;
 #define ELM_PORT SerialBT
 #define ELM_BAUD 115200
 
-#define PID_NUM_STATES 5
+#define PID_NUM_STATES 6
 constexpr int8_t PID_ENG_RPM  = 0;
 constexpr int8_t PID_SPEED    = 1;
 constexpr int8_t PID_COOLANT  = 2;
 constexpr int8_t PID_OIL      = 3;
 constexpr int8_t PID_TEMP     = 4;
+constexpr int8_t PID_FUEL     = 5;
 extern int8_t obd_state;
 
 struct PIDInfo {

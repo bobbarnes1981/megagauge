@@ -7,14 +7,17 @@
  * defines the PIDs to request and their relevant data
  */
 PIDInfo pid_info[] = {
-  { "RPM",     "",    0,  250,  1000, 0 },
-  { "Speed",   "mph", 0,  100,   500, 0 },
-  { "Coolant", "c",   0, 2000,  5000, 0 },
-  { "Oil",     "c",   0, 2000,  5000, 0 },
-  { "Ambient", "c",   0, 5000, 10000, 0 }
+  { "RPM",     "",    0,   250,  1000, 0 },
+  { "Speed",   "mph", 0,   100,   500, 0 },
+  { "Coolant", "c",   0,  2000,  5000, 0 },
+  { "Oil",     "c",   0,  2000,  5000, 0 },
+  { "Ambient", "c",   0,  5000, 10000, 0 },
+  { "Fuel",    "%",   0, 10000, 20000, 0 }
 };
 
 int8_t obd_state = PID_ENG_RPM;
+
+unsigned long m;
 
 BluetoothSerial SerialBT;
 
@@ -127,13 +130,14 @@ bool checkElm() {
  * Request engine rpm
  */
 void checkEngRpm() {
-  if (millis() - pid_info[PID_ENG_RPM].last_read < pid_info[PID_ENG_RPM].update_time) {
+  m = millis();
+  if (m - pid_info[PID_ENG_RPM].last_read < pid_info[PID_ENG_RPM].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.rpm();
   if (checkElm()) {
-    pid_info[PID_ENG_RPM].last_read = millis();
+    pid_info[PID_ENG_RPM].last_read = m;
     pid_info[PID_ENG_RPM].value = val;
   }
 }
@@ -142,13 +146,14 @@ void checkEngRpm() {
  * Request speed in mph
  */
 void checkSpeed() {
-  if (millis() - pid_info[PID_SPEED].last_read < pid_info[PID_SPEED].update_time) {
+  m = millis();
+  if (m - pid_info[PID_SPEED].last_read < pid_info[PID_SPEED].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.mph();
   if (checkElm()) {
-    pid_info[PID_SPEED].last_read = millis();
+    pid_info[PID_SPEED].last_read = m;
     pid_info[PID_SPEED].value = val;
   }
 }
@@ -157,13 +162,14 @@ void checkSpeed() {
  * Request coolant temperature
  */
 void checkCoolant() {
-  if (millis() - pid_info[PID_COOLANT].last_read < pid_info[PID_COOLANT].update_time) {
+  m = millis();
+  if (m - pid_info[PID_COOLANT].last_read < pid_info[PID_COOLANT].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.engineCoolantTemp();
   if (checkElm()) {
-    pid_info[PID_COOLANT].last_read = millis();
+    pid_info[PID_COOLANT].last_read = m;
     pid_info[PID_COOLANT].value = val;
   }
 }
@@ -172,13 +178,14 @@ void checkCoolant() {
  * Request oil temperature
  */
 void checkOil() {
-  if (millis() - pid_info[PID_OIL].last_read < pid_info[PID_OIL].update_time) {
+  m = millis();
+  if (m - pid_info[PID_OIL].last_read < pid_info[PID_OIL].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.oilTemp();
   if (checkElm()) {
-    pid_info[PID_OIL].last_read = millis();
+    pid_info[PID_OIL].last_read = m;
     pid_info[PID_OIL].value = val;
   }
 }
@@ -187,13 +194,30 @@ void checkOil() {
  * Request ambient temperature
  */
 void checkTemp() {
-  if (millis() - pid_info[PID_TEMP].last_read < pid_info[PID_TEMP].update_time) {
+  m = millis();
+  if (m - pid_info[PID_FUEL].last_read < pid_info[PID_FUEL].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.ambientAirTemp();
   if (checkElm()) {
-    pid_info[PID_TEMP].last_read = millis();
+    pid_info[PID_FUEL].last_read = m;
+    pid_info[PID_FUEL].value = val;
+  }
+}
+
+/*
+ * Request fuel level
+ */
+void checkFuel() {
+  m = millis();
+  if (m - pid_info[PID_TEMP].last_read < pid_info[PID_TEMP].update_time) {
+    incrementCheck();
+    return;
+  }
+  float val = elm327.fuelLevel();
+  if (checkElm()) {
+    pid_info[PID_TEMP].last_read = m;
     pid_info[PID_TEMP].value = val;
   }
 }
@@ -225,6 +249,9 @@ void obd_run() {
         break;
       case PID_TEMP:
         checkTemp();
+        break;
+      case PID_FUEL:
+        checkFuel();
         break;
     }
   }
