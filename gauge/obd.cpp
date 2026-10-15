@@ -12,7 +12,7 @@ PIDInfo pid_info[] = {
   { "Coolant", "c",   0,  2000,  5000, 0 },
   { "Oil",     "c",   0,  2000,  5000, 0 },
   { "Ambient", "c",   0,  5000, 10000, 0 },
-  { "Fuel",    "%",   0, 10000, 20000, 0 }
+  { "Fuel",    "l",   0, 10000, 20000, 0 }
 };
 
 int8_t obd_state = PID_ENG_RPM;
