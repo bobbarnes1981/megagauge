@@ -8,7 +8,6 @@
  */
 void setup() {
   debug_setup();
-  obd_setup();
 }
 
 void loop() {

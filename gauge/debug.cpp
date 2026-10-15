@@ -57,7 +57,7 @@ void debug_show() {
     if (m - pid_info[PID_TEMP].last_read > pid_info[PID_TEMP].stale_time) {
       DEBUG_PORT.print("*");
     }
-    DEBUG_PORT.println(" ");
+    DEBUG_PORT.print(" ");
     
     DEBUG_PORT.print(pid_info[PID_FUEL].name);
     DEBUG_PORT.print(": ");

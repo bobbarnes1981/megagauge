@@ -19,6 +19,8 @@ int8_t obd_state = PID_ENG_RPM;
 
 unsigned long m;
 
+bool connected = false;
+
 BluetoothSerial SerialBT;
 
 ELM327 elm327;
@@ -72,14 +74,17 @@ void printError(int8_t nb_rx_state) {
 bool connect() {
   if (!mac_configured) {
     DEBUG_PORT.println("MAC not configured.");
+    connected = false;
     return false;
   }
 
   DEBUG_PORT.print("Attempting to connect to ELM327... ");
+  obd_setup();
   if (!ELM_PORT.connect(mac_address, 1, ESP_SPP_SEC_NONE, ESP_SPP_ROLE_MASTER))
   {
     ELM_PORT.end();
     DEBUG_PORT.println("FAIL");
+    connected = false;
     return false;
   }
   DEBUG_PORT.println("SUCCESS");
@@ -87,10 +92,12 @@ bool connect() {
   DEBUG_PORT.print("Initialising ELM327... ");
   if (!elm327.begin(ELM_PORT, DEBUG, ELM_TIMEOUT_SECS, ELM_PROTOCOL)) { // 2 sec timeout, 0=automatic protocol detection
     DEBUG_PORT.println("FAIL");
+    connected = false;
     return false;
   }
   DEBUG_PORT.println("SUCCESS");
 
+  connected = true;
   return true;
 }
 
@@ -227,13 +234,13 @@ void checkFuel() {
  */
 void obd_run() {
   // try to connect if not already connected
-  if (!ELM_PORT.connected()) {
+  if (!connected || !ELM_PORT.connected()) {
     DEBUG_PORT.println("Disconnected...");
     connect();
   }
 
   // run OBD2 logic if connected
-  if (ELM_PORT.connected()) {
+  if (connected && ELM_PORT.connected()) {
     switch (obd_state) {
       case PID_ENG_RPM:
         checkEngRpm();
