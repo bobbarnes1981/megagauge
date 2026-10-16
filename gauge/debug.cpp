@@ -18,7 +18,7 @@ void debug_show() {
     DEBUG_PORT.print(": ");
     DEBUG_PORT.print(pid_info[PID_ENG_RPM].value);
     DEBUG_PORT.print(pid_info[PID_ENG_RPM].suffix);
-    if (m - pid_info[PID_ENG_RPM].last_read > pid_info[PID_ENG_RPM].stale_time) {
+    if (pid_info[PID_ENG_RPM].stale) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
@@ -27,7 +27,7 @@ void debug_show() {
     DEBUG_PORT.print(": ");
     DEBUG_PORT.print(pid_info[PID_SPEED].value);
     DEBUG_PORT.print(pid_info[PID_SPEED].suffix);
-    if (m - pid_info[PID_SPEED].last_read > pid_info[PID_SPEED].stale_time) {
+    if (pid_info[PID_SPEED].stale) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
@@ -36,7 +36,7 @@ void debug_show() {
     DEBUG_PORT.print(": ");
     DEBUG_PORT.print(pid_info[PID_COOLANT].value);
     DEBUG_PORT.print(pid_info[PID_COOLANT].suffix);
-    if (m - pid_info[PID_COOLANT].last_read > pid_info[PID_COOLANT].stale_time) {
+    if (pid_info[PID_COOLANT].stale) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
@@ -45,7 +45,7 @@ void debug_show() {
     DEBUG_PORT.print(": ");
     DEBUG_PORT.print(pid_info[PID_OIL].value);
     DEBUG_PORT.print(pid_info[PID_OIL].suffix);
-    if (m - pid_info[PID_OIL].last_read > pid_info[PID_OIL].stale_time) {
+    if (pid_info[PID_OIL].stale) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
@@ -54,7 +54,7 @@ void debug_show() {
     DEBUG_PORT.print(": ");
     DEBUG_PORT.print(pid_info[PID_TEMP].value);
     DEBUG_PORT.print(pid_info[PID_TEMP].suffix);
-    if (m - pid_info[PID_TEMP].last_read > pid_info[PID_TEMP].stale_time) {
+    if (pid_info[PID_TEMP].stale) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.print(" ");
@@ -63,7 +63,7 @@ void debug_show() {
     DEBUG_PORT.print(": ");
     DEBUG_PORT.print(pid_info[PID_FUEL].value);
     DEBUG_PORT.print(pid_info[PID_FUEL].suffix);
-    if (m - pid_info[PID_FUEL].last_read > pid_info[PID_FUEL].stale_time) {
+    if (pid_info[PID_FUEL].stale) {
       DEBUG_PORT.print("*");
     }
     DEBUG_PORT.println("");

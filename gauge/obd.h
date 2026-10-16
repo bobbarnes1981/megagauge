@@ -34,6 +34,7 @@ struct PIDInfo {
   int stale_time;
   unsigned long last_read;
   bool dirty;
+  bool stale;
 };
 
 extern PIDInfo pid_info[];

@@ -7,12 +7,12 @@
  * defines the PIDs to request and their relevant data
  */
 PIDInfo pid_info[] = {
-  { "RPM",     "",    0,   250,  1000, 0, true },
-  { "Speed",   "mph", 0,   100,   500, 0, true },
-  { "Coolant", "c",   0,  2000,  5000, 0, true },
-  { "Oil",     "c",   0,  2000,  5000, 0, true },
-  { "Ambient", "c",   0,  5000, 10000, 0, true },
-  { "Fuel",    "l",   0, 10000, 20000, 0, true }
+  { "RPM",     "",    0,   250,  1000, 0, true, false },
+  { "Speed",   "mph", 0,   100,   500, 0, true, false },
+  { "Coolant", "c",   0,  2000,  5000, 0, true, false },
+  { "Oil",     "c",   0,  2000,  5000, 0, true, false },
+  { "Ambient", "c",   0,  5000, 10000, 0, true, false },
+  { "Fuel",    "l",   0, 10000, 20000, 0, true, false }
 };
 
 int8_t obd_state = PID_ENG_RPM;
@@ -150,6 +150,9 @@ void checkEngRpm() {
       pid_info[PID_ENG_RPM].dirty = true;
     }
   }
+  if (m - pid_info[PID_ENG_RPM].last_read > pid_info[PID_ENG_RPM].stale_time) {
+    pid_info[PID_ENG_RPM].stale = true;
+  }
 }
 
 /*
@@ -168,6 +171,9 @@ void checkSpeed() {
       pid_info[PID_SPEED].value = val;
       pid_info[PID_SPEED].dirty = true;
     }
+  }
+  if (m - pid_info[PID_SPEED].last_read > pid_info[PID_SPEED].stale_time) {
+    pid_info[PID_SPEED].stale = true;
   }
 }
 
@@ -188,6 +194,9 @@ void checkCoolant() {
       pid_info[PID_COOLANT].dirty = true;
     }
   }
+  if (m - pid_info[PID_COOLANT].last_read > pid_info[PID_COOLANT].stale_time) {
+    pid_info[PID_COOLANT].stale = true;
+  }
 }
 
 /*
@@ -206,6 +215,9 @@ void checkOil() {
       pid_info[PID_OIL].value = val;
       pid_info[PID_OIL].dirty = true;
     }
+  }
+  if (m - pid_info[PID_OIL].last_read > pid_info[PID_OIL].stale_time) {
+    pid_info[PID_OIL].stale = true;
   }
 }
 
@@ -226,6 +238,9 @@ void checkTemp() {
       pid_info[PID_TEMP].dirty = true;
     }
   }
+  if (m - pid_info[PID_TEMP].last_read > pid_info[PID_TEMP].stale_time) {
+    pid_info[PID_TEMP].stale = true;
+  }
 }
 
 /*
@@ -244,6 +259,9 @@ void checkFuel() {
       pid_info[PID_FUEL].value = val;
       pid_info[PID_FUEL].dirty = true;
     }
+  }
+  if (m - pid_info[PID_FUEL].last_read > pid_info[PID_FUEL].stale_time) {
+    pid_info[PID_FUEL].stale = true;
   }
 }
 

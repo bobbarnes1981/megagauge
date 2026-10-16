@@ -37,6 +37,10 @@ void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uin
 
 void drawAmbient() {
   if (pid_info[PID_TEMP].dirty) {
+    uint16_t col = AMBER;
+    if (pid_info[PID_TEMP].stale) {
+      col = DIM;
+    } // TODO: check warning level
     pid_info[PID_TEMP].dirty = false;
     drawNumber(8,   180, 92, 42, pid_info[PID_TEMP].value, pid_info[PID_TEMP].suffix, AMBER);
   }
@@ -45,6 +49,10 @@ void drawAmbient() {
 void drawWater() {
   if (pid_info[PID_COOLANT].dirty) {
     pid_info[PID_COOLANT].dirty = false;
+    uint16_t col = AMBER;
+    if (pid_info[PID_COOLANT].stale) {
+      col = DIM;
+    } // TODO: check warning level
     drawNumber(114, 180, 92, 42, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, AMBER);
   }
 }
@@ -52,6 +60,10 @@ void drawWater() {
 void drawOil() {
   if (pid_info[PID_OIL].dirty) {
     pid_info[PID_OIL].dirty = false;
+    uint16_t col = AMBER;
+    if (pid_info[PID_OIL].stale) {
+      col = DIM;
+    } // TODO: check warning level
     drawNumber(220, 180, 92, 42, pid_info[PID_OIL].value, pid_info[PID_OIL].suffix, AMBER);
   }
 }
