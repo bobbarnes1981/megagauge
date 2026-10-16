@@ -1,4 +1,5 @@
 #include <display.h>
+#include <obd.h>
 
 #include "TFT_eSPI.h"
 
@@ -34,6 +35,33 @@ void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uin
   s.deleteSprite();
 }
 
+void drawAmbient() {
+  if (pid_info[PID_TEMP].dirty) {
+    pid_info[PID_TEMP].dirty = false;
+    drawNumber(8,   180, 92, 42, pid_info[PID_TEMP].value, pid_info[PID_TEMP].suffix, AMBER);
+  }
+}
+
+void drawWater() {
+  if (pid_info[PID_COOLANT].dirty) {
+    pid_info[PID_COOLANT].dirty = false;
+    drawNumber(114, 180, 92, 42, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, AMBER);
+  }
+}
+
+void drawOil() {
+  if (pid_info[PID_OIL].dirty) {
+    pid_info[PID_OIL].dirty = false;
+    drawNumber(220, 180, 92, 42, pid_info[PID_OIL].value, pid_info[PID_OIL].suffix, AMBER);
+  }
+}
+
+void drawValues() {
+  drawAmbient();
+  drawWater();
+  drawOil();
+}
+
 void display_setup() {
   tft.init();
   tft.setRotation(1);
@@ -49,14 +77,13 @@ void display_setup() {
   drawBox(110, 150, 100, 82, "WATER");
   drawBox(216, 150, 100, 82, "OIL");
 
-  drawNumber(8,   180, 92, 42, 14, "C", AMBER);
-  drawNumber(114, 180, 92, 42, 87, "C", AMBER);
-  drawNumber(220, 180, 92, 42, 92, "C", AMBER);
+  drawValues();
 }
 
 void display_status() {
   // show speed, rpm, water, oil and ambient
   // maybe show status text when connecting and initialising
+  drawValues();
 }
 
 void display_settings() {

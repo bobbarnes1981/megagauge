@@ -1,7 +1,7 @@
 #include <debug.h>
 #include <gauge.h>
-#include <display.h>
 #include <obd.h>
+#include <display.h>
 
 /*
  * Setup the ports

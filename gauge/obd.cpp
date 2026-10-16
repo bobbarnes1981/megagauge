@@ -7,12 +7,12 @@
  * defines the PIDs to request and their relevant data
  */
 PIDInfo pid_info[] = {
-  { "RPM",     "",    0,   250,  1000, 0 },
-  { "Speed",   "mph", 0,   100,   500, 0 },
-  { "Coolant", "c",   0,  2000,  5000, 0 },
-  { "Oil",     "c",   0,  2000,  5000, 0 },
-  { "Ambient", "c",   0,  5000, 10000, 0 },
-  { "Fuel",    "l",   0, 10000, 20000, 0 }
+  { "RPM",     "",    0,   250,  1000, 0, true },
+  { "Speed",   "mph", 0,   100,   500, 0, true },
+  { "Coolant", "c",   0,  2000,  5000, 0, true },
+  { "Oil",     "c",   0,  2000,  5000, 0, true },
+  { "Ambient", "c",   0,  5000, 10000, 0, true },
+  { "Fuel",    "l",   0, 10000, 20000, 0, true }
 };
 
 int8_t obd_state = PID_ENG_RPM;
@@ -144,8 +144,11 @@ void checkEngRpm() {
   }
   float val = elm327.rpm();
   if (checkElm()) {
-    pid_info[PID_ENG_RPM].last_read = m;
-    pid_info[PID_ENG_RPM].value = val;
+    if (pid_info[PID_ENG_RPM].value != val) {
+      pid_info[PID_ENG_RPM].last_read = m;
+      pid_info[PID_ENG_RPM].value = val;
+      pid_info[PID_ENG_RPM].dirty = true;
+    }
   }
 }
 
@@ -160,8 +163,11 @@ void checkSpeed() {
   }
   float val = elm327.mph();
   if (checkElm()) {
-    pid_info[PID_SPEED].last_read = m;
-    pid_info[PID_SPEED].value = val;
+    if (pid_info[PID_SPEED].value != val) {
+      pid_info[PID_SPEED].last_read = m;
+      pid_info[PID_SPEED].value = val;
+      pid_info[PID_SPEED].dirty = true;
+    }
   }
 }
 
@@ -176,8 +182,11 @@ void checkCoolant() {
   }
   float val = elm327.engineCoolantTemp();
   if (checkElm()) {
-    pid_info[PID_COOLANT].last_read = m;
-    pid_info[PID_COOLANT].value = val;
+    if (pid_info[PID_COOLANT].value != val) {
+      pid_info[PID_COOLANT].last_read = m;
+      pid_info[PID_COOLANT].value = val;
+      pid_info[PID_COOLANT].dirty = true;
+    }
   }
 }
 
@@ -192,8 +201,11 @@ void checkOil() {
   }
   float val = elm327.oilTemp();
   if (checkElm()) {
-    pid_info[PID_OIL].last_read = m;
-    pid_info[PID_OIL].value = val;
+    if (pid_info[PID_OIL].value != val) {
+      pid_info[PID_OIL].last_read = m;
+      pid_info[PID_OIL].value = val;
+      pid_info[PID_OIL].dirty = true;
+    }
   }
 }
 
@@ -202,14 +214,17 @@ void checkOil() {
  */
 void checkTemp() {
   m = millis();
-  if (m - pid_info[PID_FUEL].last_read < pid_info[PID_FUEL].update_time) {
+  if (m - pid_info[PID_TEMP].last_read < pid_info[PID_TEMP].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.ambientAirTemp();
   if (checkElm()) {
-    pid_info[PID_FUEL].last_read = m;
-    pid_info[PID_FUEL].value = val;
+    if (pid_info[PID_TEMP].value != val) {
+      pid_info[PID_TEMP].last_read = m;
+      pid_info[PID_TEMP].value = val;
+      pid_info[PID_TEMP].dirty = true;
+    }
   }
 }
 
@@ -218,14 +233,17 @@ void checkTemp() {
  */
 void checkFuel() {
   m = millis();
-  if (m - pid_info[PID_TEMP].last_read < pid_info[PID_TEMP].update_time) {
+  if (m - pid_info[PID_FUEL].last_read < pid_info[PID_FUEL].update_time) {
     incrementCheck();
     return;
   }
   float val = elm327.fuelLevel();
   if (checkElm()) {
-    pid_info[PID_TEMP].last_read = m;
-    pid_info[PID_TEMP].value = val;
+    if (pid_info[PID_FUEL].value != val) {
+      pid_info[PID_FUEL].last_read = m;
+      pid_info[PID_FUEL].value = val;
+      pid_info[PID_FUEL].dirty = true;
+    }
   }
 }
 
