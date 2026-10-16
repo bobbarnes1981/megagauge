@@ -6,6 +6,7 @@
 int8_t ui_state = UI_DISPLAY;
 uint8_t f2 = 2;
 uint8_t f4 = 4;
+uint8_t f8 = 8;
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -15,11 +16,11 @@ TFT_eSPI tft = TFT_eSPI();
 #define WARNING     TFT_RED
 
 void drawBox(int x, int y, int w, int h, const char* title) {
-  tft.fillRoundRect(x, y, w, h, 5, BACKGROUND);
-  tft.drawRoundRect(x, y, w, h, 5, DIM);
-  tft.setTextDatum(TC_DATUM);
+  tft.fillRoundRect(x, y, w, h, 4, BACKGROUND);
+  tft.drawRoundRect(x, y, w, h, 4, DIM);
+  tft.setTextDatum(ML_DATUM);
   tft.setTextColor(AMBER, BACKGROUND);
-  tft.drawString(title, x+w / 2, y + 5, f2);
+  tft.drawString(title, x + 8, y + h / 2, f2);
 }
 
 void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uint16_t colour) {
@@ -27,9 +28,9 @@ void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uin
   s.setColorDepth(16);
   s.createSprite(w, h);
   s.fillSprite(BACKGROUND);
-  s.setTextDatum(MC_DATUM);
+  s.setTextDatum(ML_DATUM);
   s.setTextColor(colour, BACKGROUND);
-  String text = String(value) + suffix;
+  String text = String((int)round(value)) + suffix;
   s.drawString(text,  w / 2, h / 2, f4);
   s.pushSprite(x, y);
   s.deleteSprite();
@@ -40,12 +41,9 @@ void drawLargeNumber(int x, int y, int w, int h, float value, const char* suffix
     sprite.setColorDepth(16);
     sprite.createSprite(w, h);
     sprite.fillSprite(BACKGROUND);
-
-    sprite.setTextDatum(MC_DATUM);
+    sprite.setTextDatum(ML_DATUM);
     sprite.setTextColor(AMBER, BACKGROUND);
-
-    sprite.drawString(String(value)+suffix, 85, 40, 8);
-
+    sprite.drawString(String((int)round(value))+suffix, w / 2, h / 2, f8);
     sprite.pushSprite(x, y);
     sprite.deleteSprite();
 }
@@ -57,7 +55,7 @@ void drawAmbient() {
       col = DIM;
     } // TODO: check warning level
     pid_info[PID_TEMP].dirty = false;
-    drawNumber(8,   180, 92, 42, pid_info[PID_TEMP].value, pid_info[PID_TEMP].suffix, col);
+    drawNumber(145, 196, 85, 32, pid_info[PID_TEMP].value, pid_info[PID_TEMP].suffix, col);
   }
 }
 
@@ -68,7 +66,7 @@ void drawWater() {
     if (pid_info[PID_COOLANT].stale) {
       col = DIM;
     } // TODO: check warning level
-    drawNumber(114, 180, 92, 42, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, col);
+    drawNumber(145, 236, 85, 32, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, col);
   }
 }
 
@@ -79,7 +77,7 @@ void drawOil() {
     if (pid_info[PID_OIL].stale) {
       col = DIM;
     } // TODO: check warning level
-    drawNumber(220, 180, 92, 42, pid_info[PID_OIL].value, pid_info[PID_OIL].suffix, col);
+    drawNumber(145, 276, 85, 32, pid_info[PID_OIL].value, pid_info[PID_OIL].suffix, col);
   }
 }
 
@@ -90,7 +88,22 @@ void drawSpeed() {
     if (pid_info[PID_SPEED].stale) {
       col = DIM;
     } // TODO: check warning level
-    drawLargeNumber(5, 35, 170, 80, roundf(pid_info[PID_SPEED].value), pid_info[PID_SPEED].suffix, col);
+    drawLargeNumber(10, 32, 220, 90, pid_info[PID_SPEED].value, pid_info[PID_SPEED].suffix, col);
+  }
+}
+
+void drawRpm() {
+  if (pid_info[PID_ENG_RPM].dirty) {
+    pid_info[PID_ENG_RPM].dirty = false;
+    uint16_t col = AMBER;
+    if (pid_info[PID_ENG_RPM].stale) {
+      col = DIM;
+    } // TODO: check warning level
+    drawNumber(100, 130, 125, 38, pid_info[PID_ENG_RPM].value, pid_info[PID_ENG_RPM].suffix, col);
+
+    int barWidth = map(constrain(pid_info[PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
+    tft.fillRoundRect(11, 175, 218, 6, 5, BACKGROUND);
+    tft.fillRoundRect(11, 175, barWidth, 6, 5, AMBER);
   }
 }
 
@@ -99,23 +112,30 @@ void drawValues() {
   drawWater();
   drawOil();
   drawSpeed();
+  drawRpm();
 }
 
 void display_setup() {
   tft.init();
-  tft.setRotation(1);
+  tft.setRotation(0);
   tft.fillScreen(BACKGROUND);
 
   tft.setTextColor(AMBER, BACKGROUND);
   tft.setTextDatum(TL_DATUM);
 
-  tft.drawString("MINI/R50", 8, 5, f2);
-  tft.drawFastHLine(8, 26, 302, DIM);
+  tft.drawString("MINI/R50", 5, 5, f2);
+  tft.drawFastHLine(8, 26, 230, DIM);
 
-  drawBox(4,   150, 100, 82, "AMBIENT");
-  drawBox(110, 150, 100, 82, "WATER");
-  drawBox(216, 150, 100, 82, "OIL");
+  drawBox(5, 194, 230, 36, "AMBIENT");
+  drawBox(5, 234, 230, 36, "WATER");
+  drawBox(5, 274, 230, 36, "OIL");
 
+  // rpm
+  tft.setTextColor(AMBER, BACKGROUND);
+  tft.setTextDatum(TL_DATUM);
+  tft.drawString("RPM", 15, 140, f2);
+  tft.drawRoundRect(10, 174, 220, 8, 5, DIM);
+  
   drawValues();
 }
 
