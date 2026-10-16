@@ -1,5 +1,9 @@
 # Megagauge
 
+## TODO
+
+Lots of code tidying and refactoring
+
 ## Dependencies
 
 ELMduino - https://github.com/PowerBroker2/ELMduino
