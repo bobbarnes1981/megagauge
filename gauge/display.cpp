@@ -35,6 +35,21 @@ void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uin
   s.deleteSprite();
 }
 
+void drawLargeNumber(int x, int y, int w, int h, float value, const char* suffix, uint16_t colour) {
+    TFT_eSprite sprite(&tft);
+    sprite.setColorDepth(16);
+    sprite.createSprite(w, h);
+    sprite.fillSprite(BACKGROUND);
+
+    sprite.setTextDatum(MC_DATUM);
+    sprite.setTextColor(AMBER, BACKGROUND);
+
+    sprite.drawString(String(value)+suffix, 85, 40, 8);
+
+    sprite.pushSprite(x, y);
+    sprite.deleteSprite();
+}
+
 void drawAmbient() {
   if (pid_info[PID_TEMP].dirty) {
     uint16_t col = AMBER;
@@ -42,7 +57,7 @@ void drawAmbient() {
       col = DIM;
     } // TODO: check warning level
     pid_info[PID_TEMP].dirty = false;
-    drawNumber(8,   180, 92, 42, pid_info[PID_TEMP].value, pid_info[PID_TEMP].suffix, AMBER);
+    drawNumber(8,   180, 92, 42, pid_info[PID_TEMP].value, pid_info[PID_TEMP].suffix, col);
   }
 }
 
@@ -53,7 +68,7 @@ void drawWater() {
     if (pid_info[PID_COOLANT].stale) {
       col = DIM;
     } // TODO: check warning level
-    drawNumber(114, 180, 92, 42, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, AMBER);
+    drawNumber(114, 180, 92, 42, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, col);
   }
 }
 
@@ -64,7 +79,18 @@ void drawOil() {
     if (pid_info[PID_OIL].stale) {
       col = DIM;
     } // TODO: check warning level
-    drawNumber(220, 180, 92, 42, pid_info[PID_OIL].value, pid_info[PID_OIL].suffix, AMBER);
+    drawNumber(220, 180, 92, 42, pid_info[PID_OIL].value, pid_info[PID_OIL].suffix, col);
+  }
+}
+
+void drawSpeed() {
+  if (pid_info[PID_SPEED].dirty) {
+    pid_info[PID_SPEED].dirty = false;
+    uint16_t col = AMBER;
+    if (pid_info[PID_SPEED].stale) {
+      col = DIM;
+    } // TODO: check warning level
+    drawLargeNumber(5, 35, 170, 80, roundf(pid_info[PID_SPEED].value), pid_info[PID_SPEED].suffix, col);
   }
 }
 
@@ -72,6 +98,7 @@ void drawValues() {
   drawAmbient();
   drawWater();
   drawOil();
+  drawSpeed();
 }
 
 void display_setup() {
