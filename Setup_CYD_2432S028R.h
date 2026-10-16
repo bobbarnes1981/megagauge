@@ -16,7 +16,7 @@
 #define TFT_DC               2
 #define TFT_RST             -1
 
-#define TOUCH_CS            33
+#define TOUCH_CS            -1
 
 #define LOAD_GLCS
 #define LOAD_FONT2

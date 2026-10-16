@@ -12,23 +12,18 @@ void setup() {
 }
 
 void loop() {
+  display_touch();
   switch (ui_state) {
     case UI_DISPLAY:
       {
         obd_run();
-        display_status();
+        display_display();
       }
       break;
     
     case UI_SETTINGS:
       {
         display_settings();
-      }
-      break;
-
-    case UI_BTSCAN:
-      {
-        display_btscan();
       }
       break;
   }

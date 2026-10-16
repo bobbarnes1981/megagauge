@@ -1,14 +1,27 @@
 #include <display.h>
 #include <obd.h>
 
+#include "SPI.h"
 #include "TFT_eSPI.h"
+#include "XPT2046_Touchscreen.h"
 
 int8_t ui_state = UI_DISPLAY;
 uint8_t f2 = 2;
 uint8_t f4 = 4;
 uint8_t f8 = 8;
 
+unsigned long LONG_PRESS_MS = 800;
+bool prev_touch = false;
+bool handled = false;
+unsigned long touch_start = 0;
+
+SPIClass touchSPI(VSPI);
+XPT2046_Touchscreen touch(XPT2046_CS, XPT2046_IRQ);
+
 TFT_eSPI tft = TFT_eSPI();
+
+bool display_init = false;
+bool settings_init = false;
 
 #define BACKGROUND  TFT_BLACK
 #define AMBER       0xFC00
@@ -115,40 +128,92 @@ void drawValues() {
   drawRpm();
 }
 
+void init_display() {
+  if (!display_init) {
+    display_init = true;
+
+    tft.fillScreen(BACKGROUND);
+
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
+
+    tft.drawString("MINI/R50", 5, 5, f2);
+    tft.drawFastHLine(8, 26, 230, DIM);
+
+    drawBox(5, 194, 230, 36, "AMBIENT");
+    drawBox(5, 234, 230, 36, "WATER");
+    drawBox(5, 274, 230, 36, "OIL");
+
+    // rpm
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
+    tft.drawString("RPM", 15, 140, f2);
+    tft.drawRoundRect(10, 174, 220, 8, 5, DIM);
+  }
+}
+
+void init_settings() {
+  if (!settings_init) {
+    settings_init = true;
+
+    tft.fillScreen(BACKGROUND);
+
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
+
+    tft.drawString("Bluetooth", 5, 5, f2);
+    tft.drawFastHLine(8, 26, 230, DIM);
+  }
+}
+
 void display_setup() {
   tft.init();
   tft.setRotation(0);
-  tft.fillScreen(BACKGROUND);
-
-  tft.setTextColor(AMBER, BACKGROUND);
-  tft.setTextDatum(TL_DATUM);
-
-  tft.drawString("MINI/R50", 5, 5, f2);
-  tft.drawFastHLine(8, 26, 230, DIM);
-
-  drawBox(5, 194, 230, 36, "AMBIENT");
-  drawBox(5, 234, 230, 36, "WATER");
-  drawBox(5, 274, 230, 36, "OIL");
-
-  // rpm
-  tft.setTextColor(AMBER, BACKGROUND);
-  tft.setTextDatum(TL_DATUM);
-  tft.drawString("RPM", 15, 140, f2);
-  tft.drawRoundRect(10, 174, 220, 8, 5, DIM);
   
-  drawValues();
+  display_display();
+
+  touchSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
+  touch.begin(touchSPI);
+  touch.setRotation(0);
 }
 
-void display_status() {
+void display_touch() {
+  uint16_t x;
+  uint16_t y;
+  if (touch.touched()) {
+    unsigned long m = millis();
+    TS_Point p = touch.getPoint();
+
+    int x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
+    int y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
+    //Serial.printf("Touch X: %d, Y: %d, Pressure: %d, Start: %d, Elapsed: %d\n", x, y, p.z, touch_start, m - touch_start);
+
+    if (!prev_touch) {
+      touch_start = m;
+      prev_touch = true;
+      handled = false;
+    }
+    if (!handled && m - touch_start >= LONG_PRESS_MS) {
+      handled = true;
+
+      if (ui_state == UI_DISPLAY) {
+        ui_state = UI_SETTINGS;
+      }
+    }
+  } else {
+    prev_touch = false;
+  }
+}
+
+void display_display() {
   // show speed, rpm, water, oil and ambient
   // maybe show status text when connecting and initialising
+  init_display();
   drawValues();
 }
 
 void display_settings() {
   // show current mac, button to scan for bt, orientation selection?
+  init_settings();
 }
 
-void display_btscan() {
-  // scan for bt devices then display a list to select
-}
