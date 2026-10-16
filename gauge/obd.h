@@ -46,9 +46,14 @@ constexpr int MAX_BLUETOOTH_DEVICES = 10;
 extern BluetoothDevice devices[MAX_BLUETOOTH_DEVICES];
 extern int device_count;
 extern int selected_bt_device;
+extern bool mac_address_configured;
+
+extern uint8_t mac_address[6];
 
 extern PIDInfo pid_info[];
 
+void obd_save();
+bool obd_load();
 void obd_setup();
 void obd_scan();
 void obd_run();

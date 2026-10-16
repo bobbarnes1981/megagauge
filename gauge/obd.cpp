@@ -29,11 +29,10 @@ ELM327 elm327;
 BluetoothDevice devices[MAX_BLUETOOTH_DEVICES];
 int device_count = 0;
 int selected_bt_device = -1;
+bool mac_address_configured = false;
 
 // mac address to connect to
-uint8_t mac_address[6] = {
-  0xC8, 0x2E, 0x18, 0xF7, 0x95, 0xFE
-};
+uint8_t mac_address[6];
 
 /*
  * Print the elm327 state to the DEBUG_PORT
@@ -72,18 +71,58 @@ void printError(int8_t nb_rx_state) {
   delay(100);
 }
 
+
+void obd_save() {
+  if (selected_bt_device < 0 || selected_bt_device >= MAX_BLUETOOTH_DEVICES) {
+    return;
+  }
+  preferences.begin("megagauge", false); //false = read/write
+  preferences.putString("bt-mac", devices[selected_bt_device].address);
+  preferences.end();
+
+  DEBUG_PORT.print("Saved ");
+  DEBUG_PORT.println(devices[selected_bt_device].address.c_str());
+}
+
+bool obd_load() {
+  preferences.begin("megagauge", true);
+  String address = preferences.getString("bt-mac", "");
+  preferences.end();
+
+  DEBUG_PORT.print("Loaded: ");
+  DEBUG_PORT.println(address.c_str());
+
+  if (sscanf(address.c_str(), "%2x:%2x:%2x:%2x:%2x:%2x", &mac_address[0], &mac_address[1], &mac_address[2], &mac_address[3], &mac_address[4], &mac_address[5]) == 6) {
+    mac_address_configured = true;
+  } else {
+    mac_address_configured = false;
+  }
+  return mac_address_configured;
+}
+
+/*
+ *
+ */
+void obd_setup() {
+  obd_load();
+}
+
+void obd_init() {
+  ELM_PORT.begin("MegaGauge", true); // ismaster=true
+}
+
 /*
  * Connect the bluetooth serial and initialise the elm connection
  */
 bool connect() {
-  if (selected_bt_device == -1) {
+  if (mac_address_configured == false) {
     DEBUG_PORT.println("BT not configured.");
     connected = false;
     return false;
   }
 
   DEBUG_PORT.print("Attempting to connect to ELM327... ");
-  obd_setup();
+  obd_init();
   if (!ELM_PORT.connect(mac_address, 1, ESP_SPP_SEC_NONE, ESP_SPP_ROLE_MASTER))
   {
     ELM_PORT.end();
@@ -103,10 +142,6 @@ bool connect() {
 
   connected = true;
   return true;
-}
-
-void obd_setup() {
-  ELM_PORT.begin("MegaGauge", true); // ismaster=true
 }
 
 /*
@@ -273,8 +308,8 @@ void checkFuel() {
  *
  */
 void obd_scan() {
-  obd_setup();
-  
+  obd_init();
+
   device_count = 0;
   selected_bt_device = -1;
 

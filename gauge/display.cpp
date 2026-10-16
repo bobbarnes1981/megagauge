@@ -1,6 +1,8 @@
+#include <debug.h>
 #include <display.h>
 #include <obd.h>
 
+#include "Preferences.h"
 #include "SPI.h"
 #include "TFT_eSPI.h"
 #include "XPT2046_Touchscreen.h"
@@ -19,6 +21,8 @@ SPIClass touchSPI(VSPI);
 XPT2046_Touchscreen touch(XPT2046_CS, XPT2046_IRQ);
 
 TFT_eSPI tft = TFT_eSPI();
+
+Preferences preferences;
 
 bool display_init = false;
 bool settings_init = false;
@@ -159,7 +163,7 @@ void draw_settings() {
     tft.drawString("No devices found", 10, 60, 2);
   }
   for (int i = 0; i < device_count && i < BT_ON_SCREEN; i++) {
-    int y = 48 + (i * 53);
+    int y = 48 + (i * 53); // TODO: use defines for these magic numbers
     uint16_t border = i == selected_bt_device ? AMBER : DIM;
     tft.drawRoundRect(5, y, 230, 48, 4, border);
     tft.setTextColor(AMBER, BACKGROUND);
@@ -232,11 +236,25 @@ void display_touch() {
 
       case UI_SETTINGS:
         {
-          int i = (y - 48) / 53;
-          if (i >= 0 && i < BT_ON_SCREEN && i < device_count) {
-            selected_bt_device = i;
+          if (y > 48 && y < 260) {
+            int i = (y - 48) / 53; // TODO: use defines for these magic numbers
+            if (i >= 0 && i < BT_ON_SCREEN && i < device_count) {
+              selected_bt_device = i;
+            }
+          } else if (y > 260) {
+            if (x < 120) {
+              // reinit screen to force rescan
+              settings_init = false;
+            }
+            if (x > 120 && selected_bt_device != -1) {
+              // save the selected mac address
+              obd_save();
+              if (obd_load()) {
+                ui_state = UI_DISPLAY;
+                display_init = false;
+              }
+            }
           }
-          // TODO: check buttons, save mac, rescan 
         }
         break;
     }

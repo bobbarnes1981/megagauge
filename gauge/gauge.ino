@@ -9,6 +9,7 @@
 void setup() {
   debug_setup();
   display_setup();
+  obd_setup();
 }
 
 void loop() {
