@@ -8,6 +8,7 @@
  */
 void setup() {
   debug_setup();
+  display_setup();
 }
 
 void loop() {
