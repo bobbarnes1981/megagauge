@@ -1,5 +1,6 @@
 #include <debug.h>
 #include <obd.h>
+#include <display.h>
 
 #include "BluetoothSerial.h"
 
@@ -25,11 +26,14 @@ BluetoothSerial SerialBT;
 
 ELM327 elm327;
 
+BluetoothDevice devices[MAX_BLUETOOTH_DEVICES];
+int device_count = 0;
+int selected_bt_device = -1;
+
 // mac address to connect to
 uint8_t mac_address[6] = {
   0xC8, 0x2E, 0x18, 0xF7, 0x95, 0xFE
 };
-bool mac_configured = true;
 
 /*
  * Print the elm327 state to the DEBUG_PORT
@@ -72,8 +76,8 @@ void printError(int8_t nb_rx_state) {
  * Connect the bluetooth serial and initialise the elm connection
  */
 bool connect() {
-  if (!mac_configured) {
-    DEBUG_PORT.println("MAC not configured.");
+  if (selected_bt_device == -1) {
+    DEBUG_PORT.println("BT not configured.");
     connected = false;
     return false;
   }
@@ -263,6 +267,45 @@ void checkFuel() {
   if (m - pid_info[PID_FUEL].last_read > pid_info[PID_FUEL].stale_time) {
     pid_info[PID_FUEL].stale = true;
   }
+}
+
+/*
+ *
+ */
+void obd_scan() {
+  obd_setup();
+  
+  device_count = 0;
+  selected_bt_device = -1;
+
+  DEBUG_PORT.println("scanning for bt... ");
+  BTScanResults* results = ELM_PORT.discover(10000);
+
+  if (results == nullptr) {
+    DEBUG_PORT.println("FAILED");
+    return;
+  }
+  DEBUG_PORT.println("SUCCESS");
+  DEBUG_PORT.println(results->getCount());
+
+  for (int i = 0; i < results->getCount() && device_count < MAX_BLUETOOTH_DEVICES; i++) {
+    BTAdvertisedDevice* device = results->getDevice(i);
+    if (!device) {
+      continue;
+    }
+    devices[device_count].name = String(device->getName().c_str());
+    devices[device_count].address = String(device->getAddress().toString().c_str());
+    if (devices[device_count].name.isEmpty()) {
+      devices[device_count].name = "Unknown";
+    }
+    DEBUG_PORT.print(devices[device_count].name.c_str());
+    DEBUG_PORT.print(":");
+    DEBUG_PORT.print(devices[device_count].address.c_str());
+    DEBUG_PORT.println("");
+    device_count++;
+  }
+  DEBUG_PORT.print("Found ");
+  DEBUG_PORT.println(device_count);
 }
 
 /*

@@ -37,9 +37,20 @@ struct PIDInfo {
   bool stale;
 };
 
+struct BluetoothDevice {
+  String name;
+  String address;
+};
+
+constexpr int MAX_BLUETOOTH_DEVICES = 10;
+extern BluetoothDevice devices[MAX_BLUETOOTH_DEVICES];
+extern int device_count;
+extern int selected_bt_device;
+
 extern PIDInfo pid_info[];
 
 void obd_setup();
+void obd_scan();
 void obd_run();
 
 #endif

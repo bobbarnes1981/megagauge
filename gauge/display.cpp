@@ -23,6 +23,8 @@ TFT_eSPI tft = TFT_eSPI();
 bool display_init = false;
 bool settings_init = false;
 
+#define BT_ON_SCREEN 4
+
 #define BACKGROUND  TFT_BLACK
 #define AMBER       0xFC00
 #define DIM         0x8200
@@ -120,7 +122,7 @@ void drawRpm() {
   }
 }
 
-void drawValues() {
+void draw_display() {
   drawAmbient();
   drawWater();
   drawOil();
@@ -152,6 +154,29 @@ void init_display() {
   }
 }
 
+void draw_settings() {
+  if (device_count == 0) {
+    tft.drawString("No devices found", 10, 60, 2);
+  }
+  for (int i = 0; i < device_count && i < BT_ON_SCREEN; i++) {
+    int y = 48 + (i * 53);
+    uint16_t border = i == selected_bt_device ? AMBER : DIM;
+    tft.drawRoundRect(5, y, 230, 48, 4, border);
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
+    tft.drawString(devices[i].name, 12, y + 5, 2);
+    tft.drawString(devices[i].address, 12, y + 26, 1);
+  }
+
+  tft.drawRoundRect(5, 270, 110, 42, 4, AMBER);
+  tft.drawRoundRect(125, 270, 110, 42, 4, AMBER);
+
+  tft.setTextDatum(MC_DATUM);
+
+  tft.drawString("SCAN", 60, 291, 2);
+  tft.drawString("SELECT", 180, 291, 2);
+}
+
 void init_settings() {
   if (!settings_init) {
     settings_init = true;
@@ -163,6 +188,8 @@ void init_settings() {
 
     tft.drawString("Bluetooth", 5, 5, f2);
     tft.drawFastHLine(8, 26, 230, DIM);
+
+    obd_scan();
   }
 }
 
@@ -188,17 +215,30 @@ void display_touch() {
     int y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
     //Serial.printf("Touch X: %d, Y: %d, Pressure: %d, Start: %d, Elapsed: %d\n", x, y, p.z, touch_start, m - touch_start);
 
-    if (!prev_touch) {
-      touch_start = m;
-      prev_touch = true;
-      handled = false;
-    }
-    if (!handled && m - touch_start >= LONG_PRESS_MS) {
-      handled = true;
+    switch (ui_state) {
+      case UI_DISPLAY:
+        {
+          if (!prev_touch) {
+            touch_start = m;
+            prev_touch = true;
+            handled = false;
+          }
+          if (!handled && m - touch_start >= LONG_PRESS_MS) {
+            handled = true;
+            ui_state = UI_SETTINGS;
+          }
+        }
+        break;
 
-      if (ui_state == UI_DISPLAY) {
-        ui_state = UI_SETTINGS;
-      }
+      case UI_SETTINGS:
+        {
+          int i = (y - 48) / 53;
+          if (i >= 0 && i < BT_ON_SCREEN && i < device_count) {
+            selected_bt_device = i;
+          }
+          // TODO: check buttons, save mac, rescan 
+        }
+        break;
     }
   } else {
     prev_touch = false;
@@ -209,11 +249,12 @@ void display_display() {
   // show speed, rpm, water, oil and ambient
   // maybe show status text when connecting and initialising
   init_display();
-  drawValues();
+  draw_display();
 }
 
 void display_settings() {
   // show current mac, button to scan for bt, orientation selection?
   init_settings();
+  draw_settings();
 }
 
