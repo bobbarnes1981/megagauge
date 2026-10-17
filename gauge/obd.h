@@ -6,7 +6,7 @@
 #include "ELMduino.h"
 #include "BluetoothSerial.h"
 
-const bool DEBUG            = false;
+const bool ELM_DEBUG        = true;
 const int ELM_TIMEOUT_SECS  = 2000; // 2 secs
 const int ELM_PROTOCOL      = 0;    // 0 = Automatic
 
@@ -15,7 +15,7 @@ extern BluetoothSerial SerialBT;
 extern ELM327 elm327;
 
 #define ELM_PORT SerialBT
-#define ELM_BAUD 115200
+#define ELM_BAUD 38400
 
 #define PID_NUM_STATES 6
 constexpr int8_t PID_ENG_RPM  = 0;

@@ -134,7 +134,7 @@ bool connect() {
   DEBUG_PORT.println("SUCCESS");
 
   DEBUG_PORT.print("Initialising ELM327... ");
-  if (!elm327.begin(ELM_PORT, DEBUG, ELM_TIMEOUT_SECS, ELM_PROTOCOL)) { // 2 sec timeout, 0=automatic protocol detection
+  if (!elm327.begin(ELM_PORT, ELM_DEBUG, ELM_TIMEOUT_SECS, ELM_PROTOCOL)) { // 2 sec timeout, 0=automatic protocol detection
     DEBUG_PORT.println("FAIL");
     connected = false;
     return false;
@@ -167,6 +167,7 @@ bool checkElm() {
     case ELM_GETTING_MSG:
       return false;
     default:
+      elm327.printError();
       printError(state);
       incrementCheck();
       return false;
