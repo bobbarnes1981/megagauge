@@ -123,7 +123,8 @@ bool connect() {
 
   DEBUG_PORT.print("Attempting to connect to ELM327... ");
   obd_init();
-  if (!ELM_PORT.connect(mac_address, 1, ESP_SPP_SEC_NONE, ESP_SPP_ROLE_MASTER))
+  ELM_PORT.setPin("1234", 4);
+  if (!ELM_PORT.connect(mac_address))
   {
     ELM_PORT.end();
     DEBUG_PORT.println("FAIL");
