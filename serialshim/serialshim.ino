@@ -21,10 +21,17 @@ void setup()
   Serial.println();
   Serial.println("debug started");
 
-  mySerial.begin("ESP32", true);
+  if (!mySerial.begin("ESP32", true, true)) {
+    Serial.println("bluetooth failed to start");
+    while(1);
+  }
   Serial.println("bluetooth started");
 
-  mySerial.connect(elm327bt);
+  mySerial.setPin("1234", 4);
+  if (!mySerial.connect(elm327bt)) {
+    Serial.println("bluetooth failed to connect");
+    while(1);
+  }
   Serial.println("bluetooth connected");
 }
 

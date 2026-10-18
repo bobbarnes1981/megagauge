@@ -21,10 +21,17 @@ void setup()
   Serial.println();
   Serial.println("debug started");
 
-  mySerial.begin("ESP32", true);
+  if (!mySerial.begin("ESP32", true)) {
+    Serial.println("bluetooth failed to start");
+    while(1);
+  }
   Serial.println("bluetooth started");
 
-  mySerial.connect(elm327bt);
+  mySerial.setPin("1234", 4);
+  if (!mySerial.connect(elm327bt)) {
+    Serial.println("bluetooth failed to connect");
+    while(1);
+  }
   Serial.println("bluetooth connected");
 }
 
@@ -96,19 +103,19 @@ void loop() // run over and over
     if (current == 0x72) {
       buffer_pointer = 0;
       Serial.printf("RPM\n");
-      mySerial.print("010c");
+      mySerial.print("010c\r");
       start_time = millis();
     }
     if (current == 0x73) {
       buffer_pointer = 0;
       Serial.printf("SPEED\n");
-      mySerial.print("010d");
+      mySerial.print("010d\r");
       start_time = millis();
     }
     if (current == 0x63) {
       buffer_pointer = 0;
       Serial.printf("COOLANT\n");
-      mySerial.print("0105");
+      mySerial.print("0105\r");
       start_time = millis();
     }
 
