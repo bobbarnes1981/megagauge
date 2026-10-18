@@ -24,7 +24,7 @@ void setup()
   mySerial.begin("ESP32", true);
   Serial.println("bluetooth started");
 
-  mySerial.connect(elmulator);
+  mySerial.connect(elm327bt);
   Serial.println("bluetooth connected");
 }
 
@@ -58,6 +58,8 @@ void setup()
 // 010c     rpm     (A*256+B)/4             010c41 0c 00 02
 // 010d     speed   A in kph                010d41 0d 03
 // 0105     coolant A-40 degrees c          010541 05 04
+
+unsigned long start_time = 0;
 
 unsigned long timeout = 2000;
 
@@ -95,16 +97,19 @@ void loop() // run over and over
       buffer_pointer = 0;
       Serial.printf("RPM\n");
       mySerial.print("010c");
+      start_time = millis();
     }
     if (current == 0x73) {
       buffer_pointer = 0;
       Serial.printf("SPEED\n");
       mySerial.print("010d");
+      start_time = millis();
     }
     if (current == 0x63) {
       buffer_pointer = 0;
       Serial.printf("COOLANT\n");
       mySerial.print("0105");
+      start_time = millis();
     }
 
     if (current == 0x0d) {
@@ -128,13 +133,13 @@ void loop() // run over and over
         Serial.println();
             switch (last) {
               case 0x72: // r
-                Serial.printf("RPM : 0x%c%c 0x%c%c 0x%c%c : (A*256+B)/4\n", buffer[7], buffer[8], buffer[10], buffer[11], buffer[13], buffer[14]);
+                Serial.printf("RPM : 0x%c%c 0x%c%c 0x%c%c : (A*256+B)/4\n%d\n", buffer[7], buffer[8], buffer[10], buffer[11], buffer[13], buffer[14], millis() - start_time);
                 break;
               case 0x73: // s
-                Serial.printf("SPEED : 0x%c%c 0x%c%c : A kph\n", buffer[7], buffer[8], buffer[10], buffer[11]);
+                Serial.printf("SPEED : 0x%c%c 0x%c%c : A kph\n%d\n", buffer[7], buffer[8], buffer[10], buffer[11], millis() - start_time);
                 break;
               case 0x63: // c
-                Serial.printf("COOLANT : 0x%c%c 0x%c%c : A-40 deg c\n", buffer[7], buffer[8], buffer[10], buffer[11]);
+                Serial.printf("COOLANT : 0x%c%c 0x%c%c : A-40 deg c\n%d\n", buffer[7], buffer[8], buffer[10], buffer[11], millis() - start_time);
                 break;
               default:
                 break;
