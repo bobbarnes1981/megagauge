@@ -141,6 +141,8 @@ bool connect() {
   }
   DEBUG_PORT.println("SUCCESS");
 
+  ELM_PORT.print("AT SP 3"); // required?
+
   connected = true;
   return true;
 }

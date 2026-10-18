@@ -27,7 +27,7 @@ const int ELM_TIMEOUT_SECS  = 2000; // 2 secs
   * B        - User1 CAN (11* bit ID, 125* kbaud)
   * C        - User2 CAN (11* bit ID, 50* kbaud)
   */
-const int ELM_PROTOCOL      = 0;    // Mini 3,4,5
+const int ELM_PROTOCOL      = 3;    // Mini 3,4,5
 
 extern BluetoothSerial SerialBT;
 
