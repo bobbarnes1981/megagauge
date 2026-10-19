@@ -16,6 +16,7 @@ uint8_t veepeak[6] = {
 #define DEBUG_BAUD 115200
 #define ELM_PORT btSerial
 #define MAC elm327bt
+//#define MAC elmulator
 
 int buffer[50];
 int pointer = 0;
@@ -42,6 +43,7 @@ void setup()
 int state = 0;
 
 int parseNibble(int nibble) {
+  DEBUG_PORT.printf("parsing '%c'\n", nibble);
   if (nibble >= 'A' && nibble <= 'Z') {
     return nibble - 'A' + 10;
   }
@@ -51,13 +53,21 @@ int parseNibble(int nibble) {
   if (nibble >= '0' && nibble <= '9') {
     return nibble - '0';
   }
-  DEBUG_PORT.print("error parsing nibble");
+  DEBUG_PORT.printf("error parsing nibble\n");
   return 0;
 }
 
 int parseByte(int loNibble, int hiNibble) {
-  return parseNibble(loNibble) + (hiNibble<<4);
+  int lo = parseNibble(loNibble);
+  DEBUG_PORT.printf("lo '%c' = %d\n", loNibble, lo);
+  int hi = parseNibble(hiNibble);
+  DEBUG_PORT.printf("hi '%c' = %d\n", hiNibble, hi);
+  return lo + (hi<<4);
 }
+
+int rpm = 0;
+int speed = 0;
+int coolant = 0;
 
 void loop() // run over and over
 {
@@ -67,10 +77,14 @@ void loop() // run over and over
       state++;
       break;
     case 2:
-      ELM_PORT.print("AT RV\r");
+      ELM_PORT.print("AT E0\r");
       state++;
       break;
     case 4:
+      ELM_PORT.print("AT RV\r");
+      state++;
+      break;
+    case 6:
       ELM_PORT.print("AT SP 3\r");
       // TODO: wait 5 secs?
       //       wait for 'BUS INIT: OK' ?
@@ -79,28 +93,28 @@ void loop() // run over and over
       // TODO: maybe disable echo ATE0
       state++;
       break;
-    case 6:
+    case 8:
       ELM_PORT.print("ATDP\r");
       state++;
       break;
-    case 8:
-      // supported pids
-      ELM_PORT.print("01 00\r");
-      state++;
-      break;
     case 10:
-      // rpm
-      ELM_PORT.print("01 0C\r");
+      // supported pids
+      ELM_PORT.print("0100\r");
       state++;
       break;
     case 12:
-      // speed
-      ELM_PORT.print("01 0D\r");
+      // rpm
+      ELM_PORT.print("010C\r");
       state++;
       break;
     case 14:
+      // speed
+      ELM_PORT.print("010D\r");
+      state++;
+      break;
+    case 16:
       // coolant
-      ELM_PORT.print("01 05\r");
+      ELM_PORT.print("0105\r");
       state++;
       break;
   }
@@ -112,47 +126,48 @@ void loop() // run over and over
     if (b == '>') {
       // TODO: check if successful (has correct num bytes)
       switch (state) {
-        case 7:
+        case 9:
           // display protocol
           // ISO 9141-2
           break;
-        case 9:
+        case 11:
           // supported pids
           // 41 00 BE 3E B8 11
           break;
-        case 11:
+        case 13:
           {
             // rpm
             // 41 0C aa bb
             int aa = parseByte(buffer[6], buffer[7]);
             int bb = parseByte(buffer[9], buffer[10]);
-            DEBUG_PORT.printf("RPM: %d\r", ((aa*256)+bb)/4);
-          }
-          break;
-        case 13:
-          {
-            // speed
-            // 41 0D aa
-            int aa = parseByte(buffer[6], buffer[7]);
-            DEBUG_PORT.printf("Speed: %dkph\r", aa);
+            rpm = ((aa*256)+bb)/4;
           }
           break;
         case 15:
           {
+            // speed
+            // 41 0D aa
+            int aa = parseByte(buffer[6], buffer[7]);
+            speed = aa * 0.621371;
+          }
+          break;
+        case 17:
+          {
             // coolant
             // 41 05 aa
             int aa = parseByte(buffer[6], buffer[7]);
-            DEBUG_PORT.printf("Coolant: %dc\r", aa-40);
+            coolant = aa-40;
           }
       }
-      for (int i = 0; i < pointer; i++) {
+      //for (int i = 0; i < pointer; i++) {
         //DEBUG_PORT.write(buffer[i]);
-      }
+      //}
       pointer = 0;
       state+=1;
       DEBUG_PORT.println();
-      if (state > 14) {
-        state = 6;
+      if (state >= 18) {
+        DEBUG_PORT.printf("RPM: %d\tSpeed: %d\tCoolant: %d\n", rpm, speed, coolant);
+        state = 8;
       }
     }
   }
