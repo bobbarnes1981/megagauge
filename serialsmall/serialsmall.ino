@@ -79,7 +79,7 @@ void loop() // run over and over
       state++;
       break;
     case 2:
-      ELM_PORT.print("AT E0\r");
+      ELM_PORT.print("AT E 0\r");
       state++;
       break;
     case 4:
@@ -96,7 +96,7 @@ void loop() // run over and over
       state++;
       break;
     case 8:
-      ELM_PORT.print("ATDP\r");
+      ELM_PORT.print("AT DP\r");
       state++;
       break;
     case 10:
