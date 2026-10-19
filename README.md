@@ -70,7 +70,7 @@ ENSURE LINES END WITH CARRIAGE RETURN '\r'
 
 0100     supported PIDs
 
-010c     rpm     (A*256+B)/4             010c41 0c 00 02
+010c     rpm     ((A\*256)+B)/4          010c41 0c 00 02
 
 010d     speed   A in kph                010d41 0d 03
 
