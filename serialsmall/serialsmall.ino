@@ -52,6 +52,7 @@ void loop() // run over and over
     case 4:
       mySerial.print("AT SP 3\r");
       // wait 5 secs?
+      // wait for 'BUS INIT: OK' ?
       // after timeout, go back to 0?
       delay(5000);
       state++;
