@@ -88,6 +88,10 @@ void loop() // run over and over
       }
       pointer = 0;
       state+=1;
+      Serial.println();
+      if (state > 14) {
+        state = 6;
+      }
     }
   }
 }
