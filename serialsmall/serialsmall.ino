@@ -12,6 +12,11 @@ uint8_t veepeak[6] = {
   0x8c, 0xde, 0x52, 0xda, 0x53, 0x80
 };
 
+#define MAC elm327bt
+
+int buffer[50];
+int pointer = 0;
+
 void setup()
 {
   Serial.begin(115200);
@@ -24,7 +29,7 @@ void setup()
   }
   Serial.println("bluetooth started");
   mySerial.setPin("1234", 4);
-  if (!mySerial.connect(elm327bt)) {
+  if (!mySerial.connect(MAC)) {
     Serial.println("bluetooth failed to connect");
     while(1);
   }
@@ -38,23 +43,50 @@ void loop() // run over and over
   switch (state) {
     case 0:
       mySerial.print("AT I\r");
-      state = 1;
+      state++;
       break;
     case 2:
+      mySerial.print("AT RV\r");
+      state++;
+      break;
+    case 4:
       mySerial.print("AT SP 3\r");
       // wait 5 secs?
       // after timeout, go back to 0?
-      state = 3;
+      delay(5000);
+      state++;
       break;
-    case 4:
-      mySerial.print("01 05\r");
-      state = 5;
+    case 6:
+      mySerial.print("ATDP\r");
+      state++;
+      break;
+    case 8:
+      mySerial.print("0100\r");
+      state++;
+      break;
+    case 10:
+      mySerial.print("010c\r");
+      state++;
+      break;
+    case 12:
+      mySerial.print("010d\r");
+      state++;
+      break;
+    case 14:
+      mySerial.print("0105\r");
+      state++;
       break;
   }
   if (mySerial.available()) {
     int b = mySerial.read();
+    buffer[pointer] = b;
+    pointer++;
     Serial.write(b);
     if (b == '>') {
+      for (int i = 0; i < pointer; i++) {
+        //Serial.write(buffer[i]);
+      }
+      pointer = 0;
       state+=1;
     }
   }
