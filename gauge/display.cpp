@@ -1,8 +1,8 @@
 #include <debug.h>
 #include <display.h>
 #include <obd.h>
+#include <adapter.h>
 
-#include "Preferences.h"
 #include "SPI.h"
 #include "TFT_eSPI.h"
 #include "XPT2046_Touchscreen.h"
@@ -22,7 +22,6 @@ XPT2046_Touchscreen touch(XPT2046_CS, XPT2046_IRQ);
 
 TFT_eSPI tft = TFT_eSPI();
 
-Preferences preferences;
 
 bool display_init = false;
 bool settings_init = false;
@@ -67,69 +66,45 @@ void drawLargeNumber(int x, int y, int w, int h, float value, const char* suffix
     sprite.deleteSprite();
 }
 
-void drawAmbient() {
-  if (pid_info[PID_TEMP].dirty) {
-    uint16_t col = AMBER;
-    if (pid_info[PID_TEMP].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    pid_info[PID_TEMP].dirty = false;
-    drawNumber(145, 196, 85, 32, pid_info[PID_TEMP].value, pid_info[PID_TEMP].suffix, col);
-  }
-}
-
 void drawWater() {
-  if (pid_info[PID_COOLANT].dirty) {
-    pid_info[PID_COOLANT].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[PID_COOLANT].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawNumber(145, 236, 85, 32, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, col);
-  }
-}
-
-void drawOil() {
-  if (pid_info[PID_OIL].dirty) {
-    pid_info[PID_OIL].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[PID_OIL].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawNumber(145, 276, 85, 32, pid_info[PID_OIL].value, pid_info[PID_OIL].suffix, col);
-  }
+  // if (pid_info[PID_COOLANT].dirty) {
+  //   pid_info[PID_COOLANT].dirty = false;
+  //   uint16_t col = AMBER;
+  //   if (pid_info[PID_COOLANT].stale) {
+  //     col = DIM;
+  //   } // TODO: check warning level
+  //   drawNumber(145, 276, 85, 32, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, col);
+  // }
 }
 
 void drawSpeed() {
-  if (pid_info[PID_SPEED].dirty) {
-    pid_info[PID_SPEED].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[PID_SPEED].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawLargeNumber(10, 32, 220, 90, pid_info[PID_SPEED].value, pid_info[PID_SPEED].suffix, col);
-  }
+  // if (pid_info[PID_SPEED].dirty) {
+  //   pid_info[PID_SPEED].dirty = false;
+  //   uint16_t col = AMBER;
+  //   if (pid_info[PID_SPEED].stale) {
+  //     col = DIM;
+  //   } // TODO: check warning level
+  //   drawLargeNumber(10, 32, 220, 90, pid_info[PID_SPEED].value, pid_info[PID_SPEED].suffix, col);
+  // }
 }
 
 void drawRpm() {
-  if (pid_info[PID_ENG_RPM].dirty) {
-    pid_info[PID_ENG_RPM].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[PID_ENG_RPM].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawNumber(100, 130, 125, 38, pid_info[PID_ENG_RPM].value, pid_info[PID_ENG_RPM].suffix, col);
+  // if (pid_info[PID_ENG_RPM].dirty) {
+  //   pid_info[PID_ENG_RPM].dirty = false;
+  //   uint16_t col = AMBER;
+  //   if (pid_info[PID_ENG_RPM].stale) {
+  //     col = DIM;
+  //   } // TODO: check warning level
+  //   drawNumber(100, 130, 125, 38, pid_info[PID_ENG_RPM].value, pid_info[PID_ENG_RPM].suffix, col);
 
-    int barWidth = map(constrain(pid_info[PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
-    tft.fillRoundRect(11, 175, 218, 6, 5, BACKGROUND);
-    tft.fillRoundRect(11, 175, barWidth, 6, 5, AMBER);
-  }
+  //   int barWidth = map(constrain(pid_info[PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
+  //   tft.fillRoundRect(11, 175, 218, 6, 5, BACKGROUND);
+  //   tft.fillRoundRect(11, 175, barWidth, 6, 5, AMBER);
+  // }
 }
 
 void draw_display() {
-  drawAmbient();
   drawWater();
-  drawOil();
   drawSpeed();
   drawRpm();
 }
@@ -146,8 +121,8 @@ void init_display() {
     tft.drawString("MINI/R50", 5, 5, f2);
     tft.drawFastHLine(8, 26, 230, DIM);
 
-    drawBox(5, 194, 230, 36, "AMBIENT");
-    drawBox(5, 234, 230, 36, "WATER");
+    // drawBox(5, 194, 230, 36, "AMBIENT");
+    // drawBox(5, 234, 230, 36, "WATER");
     drawBox(5, 274, 230, 36, "OIL");
 
     // rpm
@@ -159,12 +134,14 @@ void init_display() {
 }
 
 void draw_settings() {
-  if (device_count == 0) {
+  if (bt_device_count == 0) {
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
     tft.drawString("No devices found", 10, 60, 2);
   }
-  for (int i = 0; i < device_count && i < BT_ON_SCREEN; i++) {
+  for (int i = 0; i < bt_device_count && i < BT_ON_SCREEN; i++) {
     int y = 48 + (i * 53); // TODO: use defines for these magic numbers
-    uint16_t border = i == selected_bt_device ? AMBER : DIM;
+    uint16_t border = i == bt_device_index ? AMBER : DIM;
     tft.drawRoundRect(5, y, 230, 48, 4, border);
     tft.setTextColor(AMBER, BACKGROUND);
     tft.setTextDatum(TL_DATUM);
@@ -208,7 +185,7 @@ void display_setup() {
   touch.setRotation(0);
 }
 
-void display_touch() {
+void display_loop() {
   uint16_t x;
   uint16_t y;
   if (touch.touched()) {
@@ -238,18 +215,18 @@ void display_touch() {
         {
           if (y > 48 && y < 260) {
             int i = (y - 48) / 53; // TODO: use defines for these magic numbers
-            if (i >= 0 && i < BT_ON_SCREEN && i < device_count) {
-              selected_bt_device = i;
+            if (i >= 0 && i < BT_ON_SCREEN && i < bt_device_count) {
+              bt_device_index = i;
             }
           } else if (y > 260) {
             if (x < 120) {
               // reinit screen to force rescan
               settings_init = false;
             }
-            if (x > 120 && selected_bt_device != -1) {
+            if (x > 120 && bt_device_index != -1) {
               // save the selected mac address
-              obd_save();
-              if (obd_load()) {
+              adapter_save_mac();
+              if (adapter_load_mac()) {
                 ui_state = UI_DISPLAY;
                 display_init = false;
               }

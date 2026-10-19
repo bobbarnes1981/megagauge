@@ -8,6 +8,6 @@
 #define DEBUG_UPDATE_MS 1000
 
 void debug_setup();
-void debug_show();
+void debug_loop();
 
 #endif

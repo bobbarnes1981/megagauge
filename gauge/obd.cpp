@@ -1,110 +1,122 @@
 #include <debug.h>
 #include <obd.h>
 #include <display.h>
+#include <adapter.h>
 
 #include "BluetoothSerial.h"
 
 /*
  * defines the PIDs to request and their relevant data
  */
-PIDInfo pid_info[] = {
-  { "RPM",     "",    0,   250,  1000, 0, true, false },
-  { "Speed",   "mph", 0,   100,   500, 0, true, false },
-  { "Coolant", "c",   0,  2000,  5000, 0, true, false },
-  { "Oil",     "c",   0,  2000,  5000, 0, true, false },
-  { "Ambient", "c",   0,  5000, 10000, 0, true, false },
-  { "Fuel",    "l",   0, 10000, 20000, 0, true, false }
-};
+// PIDInfo pid_info[] = {
+//   { "RPM",     "",    0,   250,  1000, 0, true, false },
+//   { "Speed",   "mph", 0,   100,   500, 0, true, false },
+//   { "Coolant", "c",   0,  2000,  5000, 0, true, false }
+// };
 
-int8_t obd_state = PID_ENG_RPM;
+int buffer[BUFFER_SIZE];
+int pointer = 0;
 
-unsigned long m;
+// int8_t elm_initi_state = ELM_INIT_STATE_0;
 
-bool connected = false;
+// int8_t elm_request_pid = -1;
+// int8_t elm_request_state = ELM_REQ_STATE_READY;
+
+// unsigned long m;
+
+bool bt_connected = false;
 
 BluetoothSerial SerialBT;
 
-ELM327 elm327;
 
-BluetoothDevice devices[MAX_BLUETOOTH_DEVICES];
-int device_count = 0;
-int selected_bt_device = -1;
-bool mac_address_configured = false;
-
-// mac address to connect to
-uint8_t mac_address[6];
-
-/*
- * Print the elm327 state to the DEBUG_PORT
- */
-void printError(int8_t nb_rx_state) {
-  DEBUG_PORT.print("Received: ");
-  switch (nb_rx_state) {
-    case ELM_SUCCESS:
-      DEBUG_PORT.println("ELM_SUCCESS");
-      break;
-    case ELM_NO_RESPONSE:
-      DEBUG_PORT.println("ERROR: ELM_NO_RESPONSE");
-      break;
-    case ELM_BUFFER_OVERFLOW:
-      DEBUG_PORT.println("ERROR: ELM_BUFFER_OVERFLOW");
-      break;
-    case ELM_UNABLE_TO_CONNECT:
-      DEBUG_PORT.println("ERROR: ELM_UNABLE_TO_CONNECT");
-      break;
-    case ELM_NO_DATA:
-      DEBUG_PORT.println("ERROR: ELM_NO_DATA");
-      break;
-    case ELM_STOPPED:
-      DEBUG_PORT.println("ERROR: ELM_STOPPED");
-      break;
-    case ELM_TIMEOUT:
-      DEBUG_PORT.println("ERROR: ELM_TIMEOUT");
-      break;
-    case ELM_GENERAL_ERROR:
-      DEBUG_PORT.println("ERROR: ELM_GENERAL_ERROR");
-      break;
-    default:
-      DEBUG_PORT.println("No error detected");
-      break;
+int parseNibble(int nibble) {
+  DEBUG_PORT.printf("parsing '%c'\n", nibble);
+  if (nibble >= 'A' && nibble <= 'Z') {
+    return nibble - 'A' + 10;
   }
-  delay(100);
+  if (nibble >= 'a' && nibble <= 'z') {
+    return nibble - 'a' + 10;
+  }
+  if (nibble >= '0' && nibble <= '9') {
+    return nibble - '0';
+  }
+  DEBUG_PORT.printf("error parsing nibble\n");
+  return 0;
 }
 
-
-void obd_save() {
-  if (selected_bt_device < 0 || selected_bt_device >= MAX_BLUETOOTH_DEVICES) {
-    return;
-  }
-  preferences.begin("megagauge", false); //false = read/write
-  preferences.putString("bt-mac", devices[selected_bt_device].address);
-  preferences.end();
-
-  DEBUG_PORT.print("Saved ");
-  DEBUG_PORT.println(devices[selected_bt_device].address.c_str());
+int parseByte(int hiNibble, int loNibble) {
+  int hi = parseNibble(hiNibble);
+  DEBUG_PORT.printf("hi '%c' = %d\n", hiNibble, hi);
+  int lo = parseNibble(loNibble);
+  DEBUG_PORT.printf("lo '%c' = %d\n", loNibble, lo);
+  int b = (hi<<4)+lo;
+  DEBUG_PORT.printf("byte = %d\n", b); 
+  return b;
 }
 
-bool obd_load() {
-  preferences.begin("megagauge", true);
-  String address = preferences.getString("bt-mac", "");
-  preferences.end();
+void elm_request(String request, int8_t r) {
+  // switch (elm_state) {
+  //   case ELM_STATE_READY:
+  //     {
+  //       ELM_PORT.print(request);
+  //       elm_current_request = r;
+  //       elm_state = ELM_STATE_WAITING;
+  //     }
+  //     break;
+  //   case ELM_STATE_WAITING:
+  //     {
+  //       DEBUG_PORT.printf("cannot send request\r");
+  //     }
+  //     break;
+  // }
+}
 
-  DEBUG_PORT.print("Loaded: ");
-  DEBUG_PORT.println(address.c_str());
+void elm_sys_info() {
+  elm_request("AT I\r", ELM_SYS_REQUEST_INFO);
+}
 
-  if (sscanf(address.c_str(), "%2x:%2x:%2x:%2x:%2x:%2x", &mac_address[0], &mac_address[1], &mac_address[2], &mac_address[3], &mac_address[4], &mac_address[5]) == 6) {
-    mac_address_configured = true;
+void elm_sys_echo(bool enabled) {
+  if (enabled) {
+    elm_request("AT E 1\r", ELM_SYS_REQUEST_ECHO);
   } else {
-    mac_address_configured = false;
+    elm_request("AT E 0\r", ELM_SYS_REQUEST_ECHO);
   }
-  return mac_address_configured;
+}
+
+void elm_sys_set_protocol_3() {
+  elm_request("AT SP 3\r", ELM_SYS_REQUEST_SETPROTO);
+  delay(5000);
+}
+
+void elm_sys_get_protocol() {
+  elm_request("AT DP\r", ELM_SYS_REQUEST_GETPROTO);
+}
+
+void elm_sys_volt() {
+  elm_request("AT RV\r", ELM_SYS_REQUEST_VOLT);
+}
+
+void elm_obd_pids() {
+
+}
+
+void elm_obd_rpm() {
+
+}
+
+void elm_obd_speed() {
+
+}
+
+void elm_obd_coolant() {
+
 }
 
 /*
  *
  */
 void obd_setup() {
-  obd_load();
+  adapter_load_mac();
 }
 
 void obd_init() {
@@ -116,8 +128,8 @@ void obd_init() {
  */
 bool connect() {
   if (mac_address_configured == false) {
-    DEBUG_PORT.println("BT not configured.");
-    connected = false;
+    DEBUG_PORT.println("mac not configured.");
+    bt_connected = false;
     return false;
   }
 
@@ -128,185 +140,80 @@ bool connect() {
   {
     ELM_PORT.end();
     DEBUG_PORT.println("FAIL");
-    connected = false;
+    bt_connected = false;
     return false;
   }
   DEBUG_PORT.println("SUCCESS");
 
-  DEBUG_PORT.print("Initialising ELM327... ");
-  if (!elm327.begin(ELM_PORT, ELM_DEBUG, ELM_TIMEOUT_SECS, ELM_PROTOCOL)) { // 2 sec timeout, 0=automatic protocol detection
-    DEBUG_PORT.println("FAIL");
-    connected = false;
-    return false;
-  }
-  DEBUG_PORT.println("SUCCESS");
-
-  ELM_PORT.print("AT SP 3"); // required?
-
-  connected = true;
+  bt_connected = true;
   return true;
-}
-
-/*
- * Increment and wrap the current pid state
- */
-void incrementCheck() {
-  obd_state++;
-  if (obd_state > PID_NUM_STATES-1) {
-    obd_state = 0;
-  }
-}
-
-/*
- * Check if elm has got the result, or print error
- */
-bool checkElm() {
-  int8_t state = elm327.nb_rx_state;
-  switch (state) {
-    case ELM_SUCCESS:
-      incrementCheck();
-      return true;
-    case ELM_GETTING_MSG:
-      return false;
-    default:
-      elm327.printError();
-      printError(state);
-      incrementCheck();
-      return false;
-  }
 }
 
 /*
  * Request engine rpm
  */
-void checkEngRpm() {
-  m = millis();
-  if (m - pid_info[PID_ENG_RPM].last_read < pid_info[PID_ENG_RPM].update_time) {
-    incrementCheck();
-    return;
-  }
-  float val = elm327.rpm();
-  if (checkElm()) {
-    if (pid_info[PID_ENG_RPM].value != val) {
-      pid_info[PID_ENG_RPM].last_read = m;
-      pid_info[PID_ENG_RPM].value = val;
-      pid_info[PID_ENG_RPM].dirty = true;
-    }
-  }
-  if (m - pid_info[PID_ENG_RPM].last_read > pid_info[PID_ENG_RPM].stale_time) {
-    pid_info[PID_ENG_RPM].stale = true;
-  }
-}
+// void checkEngRpm() {
+//   m = millis();
+//   if (m - pid_info[PID_ENG_RPM].last_read < pid_info[PID_ENG_RPM].update_time) {
+//     //incrementCheck();
+//     return;
+//   }
+//   //float val = elm327.rpm();
+//   //if (checkElm()) {
+//     //if (pid_info[PID_ENG_RPM].value != val) {
+//     //  pid_info[PID_ENG_RPM].last_read = m;
+//     //  pid_info[PID_ENG_RPM].value = val;
+//     //  pid_info[PID_ENG_RPM].dirty = true;
+//     //}
+//   //}
+//   if (m - pid_info[PID_ENG_RPM].last_read > pid_info[PID_ENG_RPM].stale_time) {
+//     pid_info[PID_ENG_RPM].stale = true;
+//   }
+// }
 
 /*
  * Request speed in mph
  */
-void checkSpeed() {
-  m = millis();
-  if (m - pid_info[PID_SPEED].last_read < pid_info[PID_SPEED].update_time) {
-    incrementCheck();
-    return;
-  }
-  float val = elm327.mph();
-  if (checkElm()) {
-    if (pid_info[PID_SPEED].value != val) {
-      pid_info[PID_SPEED].last_read = m;
-      pid_info[PID_SPEED].value = val;
-      pid_info[PID_SPEED].dirty = true;
-    }
-  }
-  if (m - pid_info[PID_SPEED].last_read > pid_info[PID_SPEED].stale_time) {
-    pid_info[PID_SPEED].stale = true;
-  }
-}
+// void checkSpeed() {
+//   m = millis();
+//   if (m - pid_info[PID_SPEED].last_read < pid_info[PID_SPEED].update_time) {
+//     //incrementCheck();
+//     return;
+//   }
+//   //float val = elm327.mph();
+//   //if (checkElm()) {
+//     //if (pid_info[PID_SPEED].value != val) {
+//     //  pid_info[PID_SPEED].last_read = m;
+//     //  pid_info[PID_SPEED].value = val;
+//     //  pid_info[PID_SPEED].dirty = true;
+//     //}
+//   //}
+//   if (m - pid_info[PID_SPEED].last_read > pid_info[PID_SPEED].stale_time) {
+//     pid_info[PID_SPEED].stale = true;
+//   }
+// }
 
 /*
  * Request coolant temperature
  */
-void checkCoolant() {
-  m = millis();
-  if (m - pid_info[PID_COOLANT].last_read < pid_info[PID_COOLANT].update_time) {
-    incrementCheck();
-    return;
-  }
-  float val = elm327.engineCoolantTemp();
-  if (checkElm()) {
-    if (pid_info[PID_COOLANT].value != val) {
-      pid_info[PID_COOLANT].last_read = m;
-      pid_info[PID_COOLANT].value = val;
-      pid_info[PID_COOLANT].dirty = true;
-    }
-  }
-  if (m - pid_info[PID_COOLANT].last_read > pid_info[PID_COOLANT].stale_time) {
-    pid_info[PID_COOLANT].stale = true;
-  }
-}
-
-/*
- * Request oil temperature
- */
-void checkOil() {
-  m = millis();
-  if (m - pid_info[PID_OIL].last_read < pid_info[PID_OIL].update_time) {
-    incrementCheck();
-    return;
-  }
-  float val = elm327.oilTemp();
-  if (checkElm()) {
-    if (pid_info[PID_OIL].value != val) {
-      pid_info[PID_OIL].last_read = m;
-      pid_info[PID_OIL].value = val;
-      pid_info[PID_OIL].dirty = true;
-    }
-  }
-  if (m - pid_info[PID_OIL].last_read > pid_info[PID_OIL].stale_time) {
-    pid_info[PID_OIL].stale = true;
-  }
-}
-
-/*
- * Request ambient temperature
- */
-void checkTemp() {
-  m = millis();
-  if (m - pid_info[PID_TEMP].last_read < pid_info[PID_TEMP].update_time) {
-    incrementCheck();
-    return;
-  }
-  float val = elm327.ambientAirTemp();
-  if (checkElm()) {
-    if (pid_info[PID_TEMP].value != val) {
-      pid_info[PID_TEMP].last_read = m;
-      pid_info[PID_TEMP].value = val;
-      pid_info[PID_TEMP].dirty = true;
-    }
-  }
-  if (m - pid_info[PID_TEMP].last_read > pid_info[PID_TEMP].stale_time) {
-    pid_info[PID_TEMP].stale = true;
-  }
-}
-
-/*
- * Request fuel level
- */
-void checkFuel() {
-  m = millis();
-  if (m - pid_info[PID_FUEL].last_read < pid_info[PID_FUEL].update_time) {
-    incrementCheck();
-    return;
-  }
-  float val = elm327.fuelLevel();
-  if (checkElm()) {
-    if (pid_info[PID_FUEL].value != val) {
-      pid_info[PID_FUEL].last_read = m;
-      pid_info[PID_FUEL].value = val;
-      pid_info[PID_FUEL].dirty = true;
-    }
-  }
-  if (m - pid_info[PID_FUEL].last_read > pid_info[PID_FUEL].stale_time) {
-    pid_info[PID_FUEL].stale = true;
-  }
-}
+// void checkCoolant() {
+//   m = millis();
+//   if (m - pid_info[PID_COOLANT].last_read < pid_info[PID_COOLANT].update_time) {
+//     //incrementCheck();
+//     return;
+//   }
+//   //float val = elm327.engineCoolantTemp();
+//   //if (checkElm()) {
+//     //if (pid_info[PID_COOLANT].value != val) {
+//     //  pid_info[PID_COOLANT].last_read = m;
+//     //  pid_info[PID_COOLANT].value = val;
+//     //  pid_info[PID_COOLANT].dirty = true;
+//     //}
+//   //}
+//   if (m - pid_info[PID_COOLANT].last_read > pid_info[PID_COOLANT].stale_time) {
+//     pid_info[PID_COOLANT].stale = true;
+//   }
+// }
 
 /*
  *
@@ -314,8 +221,8 @@ void checkFuel() {
 void obd_scan() {
   obd_init();
 
-  device_count = 0;
-  selected_bt_device = -1;
+  bt_device_count = 0;
+  bt_device_index = -1;
 
   DEBUG_PORT.println("scanning for bt... ");
   BTScanResults* results = ELM_PORT.discover(10000);
@@ -327,57 +234,100 @@ void obd_scan() {
   DEBUG_PORT.println("SUCCESS");
   DEBUG_PORT.println(results->getCount());
 
-  for (int i = 0; i < results->getCount() && device_count < MAX_BLUETOOTH_DEVICES; i++) {
+  for (int i = 0; i < results->getCount() && bt_device_count < MAX_BLUETOOTH_DEVICES; i++) {
     BTAdvertisedDevice* device = results->getDevice(i);
     if (!device) {
       continue;
     }
-    devices[device_count].name = String(device->getName().c_str());
-    devices[device_count].address = String(device->getAddress().toString().c_str());
-    if (devices[device_count].name.isEmpty()) {
-      devices[device_count].name = "Unknown";
+    devices[bt_device_count].name = String(device->getName().c_str());
+    devices[bt_device_count].address = String(device->getAddress().toString().c_str());
+    if (devices[bt_device_count].name.isEmpty()) {
+      devices[bt_device_count].name = "Unknown";
     }
-    DEBUG_PORT.print(devices[device_count].name.c_str());
+    DEBUG_PORT.print(devices[bt_device_count].name.c_str());
     DEBUG_PORT.print(":");
-    DEBUG_PORT.print(devices[device_count].address.c_str());
+    DEBUG_PORT.print(devices[bt_device_count].address.c_str());
     DEBUG_PORT.println("");
-    device_count++;
+    bt_device_count++;
   }
-  DEBUG_PORT.print("Found ");
-  DEBUG_PORT.println(device_count);
+  DEBUG_PORT.printf("Found %d\n", bt_device_count);
+}
+
+void obd_process_bytes() {
+  while (ELM_PORT.available()) {
+    int b = ELM_PORT.read();
+    buffer[pointer] = b;
+    pointer++;
+    DEBUG_PORT.write(b);
+    if (b == '>') {
+      // TODO: check if successful (has correct num bytes)
+      // switch (state) {
+      //   case 9:
+      //     // display protocol
+      //     // ISO 9141-2
+      //     break;
+      //   case 11:
+      //     // supported pids
+      //     // 41 00 BE 3E B8 11
+      //     break;
+      //   case 13:
+      //     {
+      //       // rpm
+      //       // 41 0C aa bb
+      //       int aa = parseByte(buffer[6], buffer[7]);
+      //       int bb = parseByte(buffer[9], buffer[10]);
+      //       int rpm = ((aa*256)+bb)/4;
+      //     }
+      //     break;
+      //   case 15:
+      //     {
+      //       // speed
+      //       // 41 0D aa
+      //       int aa = parseByte(buffer[6], buffer[7]);
+      //       int speed = aa * 0.621371;
+      //     }
+      //     break;
+      //   case 17:
+      //     {
+      //       // coolant
+      //       // 41 05 aa
+      //       int aa = parseByte(buffer[6], buffer[7]);
+      //       int coolant = aa-40;
+      //     }
+      // }
+      //for (int i = 0; i < pointer; i++) {
+        //DEBUG_PORT.write(buffer[i]);
+      //}
+      pointer = 0;
+      //state+=1;
+      //elm_state = ELM_STATE_READY;
+      DEBUG_PORT.println();
+      // if (state >= 18) {
+      //   DEBUG_PORT.printf("RPM: %d\tSpeed: %d\tCoolant: %d\n", rpm, speed, coolant);
+      //   state = 8;
+      // }
+    }
+  }
 }
 
 /*
  *
  */
-void obd_run() {
+void obd_loop() {
   // try to connect if not already connected
-  if (!connected || !ELM_PORT.connected()) {
-    DEBUG_PORT.println("Disconnected...");
-    connect();
-  }
+  // if (!bt_connected || !ELM_PORT.connected()) {
+  //   DEBUG_PORT.println("Disconnected...");
+  //   connect();
+  // }
 
-  // run OBD2 logic if connected
-  if (connected && ELM_PORT.connected()) {
-    switch (obd_state) {
-      case PID_ENG_RPM:
-        checkEngRpm();
-        break;
-      case PID_SPEED:
-        checkSpeed();
-        break;
-      case PID_COOLANT:
-        checkCoolant();
-        break;
-      case PID_OIL:
-        checkOil();
-        break;
-      case PID_TEMP:
-        checkTemp();
-        break;
-      case PID_FUEL:
-        checkFuel();
-        break;
-    }
-  }
+  // if (bt_connected && ELM_PORT.connected()) {
+  //   obd_process_bytes();
+  //   if (elm_initialised == false) {
+  //     if (elm_state == ELM_STATE_READY) {
+  //       elm_sys_echo(0);
+  //     }
+  //     //elm_sys_set_protocol(3);
+
+  //   }
+  // }
 }

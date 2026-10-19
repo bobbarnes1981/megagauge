@@ -1,10 +1,10 @@
 #include <debug.h>
+#include <display.h>
 #include <gauge.h>
 #include <obd.h>
-#include <display.h>
 
 /*
- * Setup the ports
+ * Setup
  */
 void setup() {
   debug_setup();
@@ -12,12 +12,17 @@ void setup() {
   obd_setup();
 }
 
+/*
+ * Loop
+ */
 void loop() {
-  display_touch();
+  debug_loop();
+  display_loop();
+  obd_loop();
+
   switch (ui_state) {
     case UI_DISPLAY:
       {
-        obd_run();
         display_display();
       }
       break;
@@ -28,5 +33,4 @@ void loop() {
       }
       break;
   }
-  debug_show();
 }

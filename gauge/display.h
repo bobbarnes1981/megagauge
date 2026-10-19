@@ -1,7 +1,6 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include "Preferences.h"
 #include "SPI.h"
 #include "TFT_eSPI.h"
 #include "XPT2046_Touchscreen.h"
@@ -22,10 +21,8 @@ constexpr int8_t UI_DISPLAY   = 0;
 constexpr int8_t UI_SETTINGS  = 1;
 extern int8_t ui_state;
 
-extern Preferences preferences;
-
 void display_setup();
-void display_touch();
+void display_loop();
 
 void display_display();
 void display_settings();

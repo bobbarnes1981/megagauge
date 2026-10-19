@@ -6,8 +6,6 @@ Lots of code tidying and refactoring
 
 ## Dependencies
 
-ELMduino - https://github.com/PowerBroker2/ELMduino
-
 TFT_eSPI - https://github.com/Bodmer/TFT_eSPI
 
 XPT2046 Touchscreen - https://github.com/PaulStoffregen/XPT2046_Touchscreen
