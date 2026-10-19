@@ -7,7 +7,7 @@
 #include "BluetoothSerial.h"
 
 const bool ELM_DEBUG        = true;
-const int ELM_TIMEOUT_SECS  = 2000; // 2 secs
+const int ELM_TIMEOUT_SECS  = 5000; // 5 secs
 
 
 

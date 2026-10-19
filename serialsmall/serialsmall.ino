@@ -57,12 +57,14 @@ int parseNibble(int nibble) {
   return 0;
 }
 
-int parseByte(int loNibble, int hiNibble) {
-  int lo = parseNibble(loNibble);
-  DEBUG_PORT.printf("lo '%c' = %d\n", loNibble, lo);
+int parseByte(int hiNibble, int loNibble) {
   int hi = parseNibble(hiNibble);
   DEBUG_PORT.printf("hi '%c' = %d\n", hiNibble, hi);
-  return lo + (hi<<4);
+  int lo = parseNibble(loNibble);
+  DEBUG_PORT.printf("lo '%c' = %d\n", loNibble, lo);
+  int b = (hi<<4)+lo;
+  DEBUG_PORT.printf("byte = %d\n", b); 
+  return b;
 }
 
 int rpm = 0;
