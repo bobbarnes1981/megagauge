@@ -90,9 +90,7 @@ void loop() // run over and over
       ELM_PORT.print("AT SP 3\r");
       // TODO: wait 5 secs?
       //       wait for 'BUS INIT: OK' ?
-      // TODO: after timeout, go back to 0?
       delay(5000);
-      // TODO: maybe disable echo ATE0
       state++;
       break;
     case 8:

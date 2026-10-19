@@ -1,9 +1,7 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include "SPI.h"
 #include "TFT_eSPI.h"
-#include "XPT2046_Touchscreen.h"
 
 #define XPT2046_IRQ  36
 #define XPT2046_MOSI 32
@@ -16,15 +14,42 @@
 #define TS_MAXX 3700
 #define TS_MAXY 3700
 
-#define UI_NUM_STATES 2
-constexpr int8_t UI_DISPLAY   = 0;
-constexpr int8_t UI_SETTINGS  = 1;
-extern int8_t ui_state;
+/*
+ * the tft object
+ */
+extern TFT_eSPI tft;
 
+// current screen state
+extern int8_t ui_screen_state;
+
+constexpr int8_t UI_SCREEN_DISPLAY  = 0;
+constexpr int8_t UI_SCREEN_SETTINGS = 1;
+
+constexpr int8_t BT_ON_SCREEN       = 4;
+
+/*
+ * setup the display
+ */
 void display_setup();
+
+/*
+ * run the display loop
+ */
 void display_loop();
 
-void display_display();
-void display_settings();
+/*
+ * display the current screen
+ */
+void display_screen();
+
+/*
+ * switch to the display screen
+ */
+void switch_screen_display();
+
+/*
+ * switch to the settings screen
+ */
+void switch_screen_settings();
 
 #endif

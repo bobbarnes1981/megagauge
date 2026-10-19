@@ -44,4 +44,9 @@ extern void adapter_save_mac();
  */
 extern bool adapter_load_mac();
 
+/*
+ * scan for bluetooth adapters
+ */
+extern void adapter_scan();
+
 #endif

@@ -1,5 +1,6 @@
 #include <adapter.h>
 #include <debug.h>
+#include <obd.h>
 
 #define PREFERENCE_NAME "megagauge"
 #define PREFERENCE_KEY_MAC "bt-mac"
@@ -53,4 +54,42 @@ bool adapter_load_mac() {
     mac_address_configured = false;
   }
   return mac_address_configured;
+}
+
+/*
+ * scan for bluetooth ada
+ */
+void adapter_scan() {
+  obd_begin();
+
+  bt_device_count = 0;
+  bt_device_index = -1;
+
+  DEBUG_PORT.println("scanning for bt... ");
+  BTScanResults* results = ELM_PORT.discover(10000);
+
+  if (results == nullptr) {
+    DEBUG_PORT.println("FAILED");
+    return;
+  }
+  DEBUG_PORT.println("SUCCESS");
+  DEBUG_PORT.println(results->getCount());
+
+  for (int i = 0; i < results->getCount() && bt_device_count < MAX_BLUETOOTH_DEVICES; i++) {
+    BTAdvertisedDevice* device = results->getDevice(i);
+    if (!device) {
+      continue;
+    }
+    devices[bt_device_count].name = String(device->getName().c_str());
+    devices[bt_device_count].address = String(device->getAddress().toString().c_str());
+    if (devices[bt_device_count].name.isEmpty()) {
+      devices[bt_device_count].name = "Unknown";
+    }
+    DEBUG_PORT.print(devices[bt_device_count].name.c_str());
+    DEBUG_PORT.print(":");
+    DEBUG_PORT.print(devices[bt_device_count].address.c_str());
+    DEBUG_PORT.println("");
+    bt_device_count++;
+  }
+  DEBUG_PORT.printf("Found %d\n", bt_device_count);
 }

@@ -2,6 +2,7 @@
 #include <display.h>
 #include <gauge.h>
 #include <obd.h>
+#include <touch.h>
 
 /*
  * Setup
@@ -9,6 +10,7 @@
 void setup() {
   debug_setup();
   display_setup();
+  touch_setup();
   obd_setup();
 }
 
@@ -18,19 +20,8 @@ void setup() {
 void loop() {
   debug_loop();
   display_loop();
+  touch_loop();
   obd_loop();
 
-  switch (ui_state) {
-    case UI_DISPLAY:
-      {
-        display_display();
-      }
-      break;
-    
-    case UI_SETTINGS:
-      {
-        display_settings();
-      }
-      break;
-  }
+  display_screen();
 }

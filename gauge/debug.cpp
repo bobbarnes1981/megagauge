@@ -16,31 +16,31 @@ void debug_loop() {
 
     DEBUG_PORT.printf("Update %d\n", m);
 
-    // DEBUG_PORT.print(pid_info[PID_ENG_RPM].name);
-    // DEBUG_PORT.print(": ");
-    // DEBUG_PORT.print(pid_info[PID_ENG_RPM].value);
-    // DEBUG_PORT.print(pid_info[PID_ENG_RPM].suffix);
-    // if (pid_info[PID_ENG_RPM].stale) {
-    //   DEBUG_PORT.print("*");
-    // }
-    // DEBUG_PORT.print(" ");
+    DEBUG_PORT.print(pid_info[OBD_PID_ENG_RPM].name);
+    DEBUG_PORT.print(": ");
+    DEBUG_PORT.print(pid_info[OBD_PID_ENG_RPM].value);
+    DEBUG_PORT.print(pid_info[OBD_PID_ENG_RPM].suffix);
+    if (pid_info[OBD_PID_ENG_RPM].stale) {
+      DEBUG_PORT.print("*");
+    }
+    DEBUG_PORT.print(" ");
     
-    // DEBUG_PORT.print(pid_info[PID_SPEED].name);
-    // DEBUG_PORT.print(": ");
-    // DEBUG_PORT.print(pid_info[PID_SPEED].value);
-    // DEBUG_PORT.print(pid_info[PID_SPEED].suffix);
-    // if (pid_info[PID_SPEED].stale) {
-    //   DEBUG_PORT.print("*");
-    // }
-    // DEBUG_PORT.print(" ");
+    DEBUG_PORT.print(pid_info[OBD_PID_SPEED].name);
+    DEBUG_PORT.print(": ");
+    DEBUG_PORT.print(pid_info[OBD_PID_SPEED].value);
+    DEBUG_PORT.print(pid_info[OBD_PID_SPEED].suffix);
+    if (pid_info[OBD_PID_SPEED].stale) {
+      DEBUG_PORT.print("*");
+    }
+    DEBUG_PORT.print(" ");
     
-    // DEBUG_PORT.print(pid_info[PID_COOLANT].name);
-    // DEBUG_PORT.print(": ");
-    // DEBUG_PORT.print(pid_info[PID_COOLANT].value);
-    // DEBUG_PORT.print(pid_info[PID_COOLANT].suffix);
-    // if (pid_info[PID_COOLANT].stale) {
-    //   DEBUG_PORT.print("*");
-    // }
-    // DEBUG_PORT.println("");
+    DEBUG_PORT.print(pid_info[OBD_PID_COOLANT].name);
+    DEBUG_PORT.print(": ");
+    DEBUG_PORT.print(pid_info[OBD_PID_COOLANT].value);
+    DEBUG_PORT.print(pid_info[OBD_PID_COOLANT].suffix);
+    if (pid_info[OBD_PID_COOLANT].stale) {
+      DEBUG_PORT.print("*");
+    }
+    DEBUG_PORT.println("");
   }
 }
