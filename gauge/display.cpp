@@ -214,12 +214,12 @@ void init_connecting() {
     screen_connecting_init = true;
 
     tft.fillRoundRect(11, 140, 218, 40, 5, BACKGROUND);
-    tft.fillRoundRect(11, 140, 218, 40, 5, AMBER);
+    tft.drawRoundRect(11, 140, 218, 40, 5, AMBER);
     
     tft.setTextColor(AMBER, BACKGROUND);
     tft.setTextDatum(TL_DATUM);
 
-    tft.drawString("Connecting...", 10, 150, f2);
+    tft.drawString("Connecting...", 20, 154, f2);
   }
 }
 

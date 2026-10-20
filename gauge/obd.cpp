@@ -25,7 +25,7 @@ int pointer = 0;
 
 unsigned long m;
 
-#define CONNECTION_COOLDOWN_MS 3000
+#define CONNECTION_COOLDOWN_MS 5000
 unsigned long obd_last_connect_attempt = 0;
 
 bool bt_connected = false;
@@ -277,8 +277,10 @@ bool obd_connect() {
     DEBUG_PORT.println("bt not connected");
     int8_t prev_state = ui_screen_state;
     switch_screen_connecting();
+    display_loop();
     connect();
     switch_screen(prev_state);
+    display_loop();
     obd_last_connect_attempt = millis();
   }
   return false;
