@@ -5,9 +5,6 @@
  * parse a char into a nibble, e.g. ascii '2' would be converted into the int 0x2
  */
 int ParseCharNibble(int nibble) {
-  if (VERBOSE) {
-    DEBUG_PORT.printf("parsing '%c'\n", nibble);
-  }
   if (nibble >= 'A' && nibble <= 'Z') {
     return nibble - 'A' + 10;
   }
@@ -18,7 +15,7 @@ int ParseCharNibble(int nibble) {
     return nibble - '0';
   }
   if (VERBOSE) {
-    DEBUG_PORT.printf("error parsing nibble\n");
+    DEBUG_PORT.printf("error parsing nibble '%c' (0x%02x)\n");
   }
   return 0;
 }
@@ -28,16 +25,10 @@ int ParseCharNibble(int nibble) {
  */
 int ParseCharByte(int hiNibble, int loNibble) {
   int hi = ParseCharNibble(hiNibble);
-  if (VERBOSE) {
-    DEBUG_PORT.printf("hi '%c' = %d\n", hiNibble, hi);
-  }
   int lo = ParseCharNibble(loNibble);
-  if (VERBOSE) {
-    DEBUG_PORT.printf("lo '%c' = %d\n", loNibble, lo);
-  }
   int b = (hi<<4)+lo;
   if (VERBOSE) {
-    DEBUG_PORT.printf("byte = %d\n", b); 
+    DEBUG_PORT.printf("parsed %c%c as 0x%02x = %d\n", hiNibble, loNibble, b, b); 
   }
   return b;
 }

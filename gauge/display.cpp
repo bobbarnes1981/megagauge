@@ -24,6 +24,8 @@ bool screen_display_init = false;
 bool screen_settings_init = false;
 // is the connecting screen initialised
 bool screen_connecting_init = false;
+// is the initialising screen initialised
+bool screen_initialising_init = false;
 
 #define BACKGROUND  TFT_BLACK
 #define AMBER       0xFC00
@@ -49,7 +51,7 @@ void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uin
   s.setColorDepth(16);
   s.createSprite(w, h);
   s.fillSprite(BACKGROUND);
-  s.setTextDatum(ML_DATUM);
+  s.setTextDatum(MR_DATUM);
   s.setTextColor(colour, BACKGROUND);
   String text = String((int)round(value)) + suffix;
   s.drawString(text,  w / 2, h / 2, f4);
@@ -82,7 +84,7 @@ void drawCoolant() {
     if (pid_info[OBD_PID_COOLANT].stale) {
       col = DIM;
     } // TODO: check warning level
-    drawNumber(145, 276, 85, 32, pid_info[OBD_PID_COOLANT].value, pid_info[OBD_PID_COOLANT].suffix, col);
+    drawNumber(280, 276, 85, 32, pid_info[OBD_PID_COOLANT].value, pid_info[OBD_PID_COOLANT].suffix, col);
   }
 }
 
@@ -110,7 +112,7 @@ void drawRpm() {
     if (pid_info[OBD_PID_ENG_RPM].stale) {
       col = DIM;
     } // TODO: check warning level
-    drawNumber(100, 210, 125, 38, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
+    drawNumber(165, 210, 125, 38, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
 
     int barWidth = map(constrain(pid_info[OBD_PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
     tft.fillRoundRect(11, 255, 218, 6, 5, BACKGROUND);
@@ -148,7 +150,7 @@ void init_display() {
     tft.drawString("RPM", 15, 220, f2);
     tft.drawRoundRect(10, 254, 220, 8, 5, DIM);
 
-    drawBox(5, 274, 230, 36, "WATER");
+    drawBox(5, 274, 230, 36, "COOLANT");
   }
 }
 
@@ -224,6 +226,30 @@ void init_connecting() {
 }
 
 /*
+ * draw the initialising screen
+ */
+void draw_initialising() {
+
+}
+
+/*
+ * initialise the initialising screen
+ */
+void init_initialising() {
+  if (!screen_initialising_init) {
+    screen_initialising_init = true;
+
+    tft.fillRoundRect(11, 140, 218, 40, 5, BACKGROUND);
+    tft.drawRoundRect(11, 140, 218, 40, 5, AMBER);
+    
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
+
+    tft.drawString("Initialising...", 20, 154, f2);
+  }
+}
+
+/*
  * setup the display
  */
 void display_setup() {
@@ -255,6 +281,15 @@ void display_connecting() {
   draw_connecting();
 }
 
+
+/*
+ *
+ */
+void display_initialising() {
+  init_initialising();
+  draw_initialising();
+}
+
 /*
  * run the display loop
  */
@@ -275,6 +310,12 @@ void display_loop() {
     case UI_SCREEN_CONNECTING:
       {
         display_connecting();
+      }
+      break;
+
+    case UI_SCREEN_INITIALISING:
+      {
+        display_initialising();
       }
       break;
   }
@@ -305,6 +346,14 @@ void switch_screen_connecting() {
 }
 
 /*
+ * switch to show the 'initialising' popover
+ */
+void switch_screen_initialising() {
+  ui_screen_state = UI_SCREEN_INITIALISING;
+  screen_initialising_init = false;
+}
+
+/*
  *
  */
 void switch_screen(int8_t state) {
@@ -319,6 +368,10 @@ void switch_screen(int8_t state) {
 
     case UI_SCREEN_CONNECTING:
       switch_screen_connecting();
+      break;
+
+    case UI_SCREEN_INITIALISING:
+      switch_screen_initialising();
       break;
   }
 }

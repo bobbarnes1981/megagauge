@@ -40,6 +40,7 @@ void elm_request(String request, int8_t r) {
     case ELM_REQ_STATE_READY:
       {
         ELM_PORT.print(request);
+        DEBUG_PORT.printf("requesting %s\n", request);
         elm_request_current = r;
         elm_request_state = ELM_REQ_STATE_WAITING;
       }
@@ -296,19 +297,19 @@ bool obd_initialise() {
       {
         DEBUG_PORT.println("Init state NONE, moving to SET_ECHO");
         elm_init_state = ELM_INIT_STATE_SET_ECHO;
-        initialised = false;
       }
       break;
 
     case ELM_INIT_STATE_SET_ECHO:
       {
+        switch_screen_initialising();
+
         elm_sys_echo(true);
         if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
           elm_request_state = ELM_REQ_STATE_READY;
           DEBUG_PORT.println("Init state SET_ECHO, moving to SET_PROTOCOL");
           elm_init_state = ELM_INIT_STATE_SET_PROTOCOL;
         }
-        initialised = false;
       }
       break;
 
@@ -320,7 +321,8 @@ bool obd_initialise() {
           DEBUG_PORT.println("Init state SET_PROTOCOL, moving to INITIALISED");
           elm_init_state = ELM_INIT_STATE_INITIALISED;
         }
-        initialised = false;
+
+        switch_screen_display();
       }
       break;
 
@@ -334,18 +336,48 @@ bool obd_initialise() {
 }
 
 /*
+ * detect the response identified by the echo, confirm against response
+ */
+int8_t obd_detect_response() {
+  int8_t resp = -1;
+  if (pointer >= 4) {
+    if (buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == 'C') {
+      DEBUG_PORT.printf("detected rpm\n");
+      resp = ELM_OBD_REQUEST_RPM;
+    } else if (buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == 'D') {
+      DEBUG_PORT.printf("detected speed\n");
+      resp = ELM_OBD_REQUEST_SPEED;
+    } else if (buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == '5') {
+      DEBUG_PORT.printf("detected coolant\n");
+      resp = ELM_OBD_REQUEST_COOLANT;
+    } else {
+      DEBUG_PORT.printf("failed detection %c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);
+    }
+
+  }
+  return resp;
+}
+
+/*
  * read all bytes from the port and process them when complete
  */
 void obd_process_bytes() {
   while (ELM_PORT.available()) {
     int b = ELM_PORT.read();
-    buffer[pointer] = b;
-    pointer++;
+    // ignore carriage returns
+    if (b != 0x0d) {
+      buffer[pointer] = b;
+      pointer++;
+    }
     if (b == '>') {
-      // TODO: check echo bytes at 0,1,2,3 so we can tell which request this is
-      //       depending on bytes read we can process data and store to variable
-      //       we could discard responses that do not match what we expect
-      //       maybe set the elm_request_state to error?
+      DEBUG_PORT.println("detected '>'");
+      /*
+       * TODO:
+       * initial request can include 'BUS INIT: OK' after pid echo e.g. 010CBUS INIT: OK41 0C 00 00 >
+       * pid requests can include 'BUS INIT: ERROR' after pid echo e.g. 010CBUS INIT: ERROR >
+       * detect what the response is supposed to be
+       */
+      obd_detect_response();
       for (int i = 0; i < pointer; i++) {
         DEBUG_PORT.write(buffer[i]);
       }

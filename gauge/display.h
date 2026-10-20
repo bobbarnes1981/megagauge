@@ -22,9 +22,10 @@ extern TFT_eSPI tft;
 // current screen state
 extern int8_t ui_screen_state;
 
-constexpr int8_t UI_SCREEN_DISPLAY    = 0;
-constexpr int8_t UI_SCREEN_SETTINGS   = 1;
-constexpr int8_t UI_SCREEN_CONNECTING = 2;
+constexpr int8_t UI_SCREEN_DISPLAY      = 0;
+constexpr int8_t UI_SCREEN_SETTINGS     = 1;
+constexpr int8_t UI_SCREEN_CONNECTING   = 2;
+constexpr int8_t UI_SCREEN_INITIALISING = 3;
 
 constexpr int8_t BT_ON_SCREEN       = 4;
 
@@ -52,6 +53,11 @@ void switch_screen_settings();
  * switch to the connecting screen
  */
 void switch_screen_connecting();
+
+/*
+ * switch to the initialising screen
+ */
+void switch_screen_initialising();
 
 /*
  *

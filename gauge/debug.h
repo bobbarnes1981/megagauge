@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define VERBOSE false
+#define VERBOSE true
 
 #define DEBUG_PORT Serial
 #define DEBUG_BAUD 115200
