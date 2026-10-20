@@ -19,7 +19,7 @@ constexpr int8_t OBD_PID_SPEED    = 1;
 constexpr int8_t OBD_PID_COOLANT  = 2;
 
 constexpr int8_t ELM_INIT_STATE_NONE            = 0;
-constexpr int8_t ELM_INIT_STATE_DISABLE_ECHO    = 1;
+constexpr int8_t ELM_INIT_STATE_SET_ECHO        = 1;
 constexpr int8_t ELM_INIT_STATE_SET_PROTOCOL    = 2;
 constexpr int8_t ELM_INIT_STATE_INITIALISED     = 3;
 

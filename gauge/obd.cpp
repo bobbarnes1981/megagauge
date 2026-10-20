@@ -15,6 +15,9 @@ PIDInfo pid_info[] = {
   { "Coolant", "c",   0,  2000,  5000, 0, true, false }
 };
 
+#define PID_ECHO_OFFSET 4
+#define PID_CMD_OFFSET 6
+
 int8_t obd_pid_state = OBD_PID_ENG_RPM;
 
 int buffer[BUFFER_SIZE];
@@ -69,7 +72,7 @@ void elm_sys_echo(bool enabled) {
 void elm_sys_set_protocol_3() {
   // 
   elm_request("AT SP 3\r", ELM_SYS_REQUEST_SETPROTO);
-  //delay(5000);
+  delay(5000); // is this needed to wait for slow init
 }
 
 void elm_sys_get_protocol() {
@@ -143,18 +146,21 @@ bool connect() {
   return true;
 }
 
-int getEngRpm() {
-  // 41 0C aa bb
-  int aa = ParseCharByte(buffer[6+4], buffer[7+4]);
-  int bb = ParseCharByte(buffer[9+4], buffer[10+4]);
-  return ((aa*256)+bb)/4;
-}
-
+/*
+ *
+ */
 void incrementCheck() {
   obd_pid_state+=1;
   if (obd_pid_state >= MAX_OBD_PIDS) {
     obd_pid_state = 0;
   }
+}
+
+int getEngRpm() {
+  // 41 0C aa bb
+  int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
+  int bb = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+3], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+4]);
+  return ((aa*256)+bb)/4;
 }
 
 /*
@@ -188,7 +194,7 @@ void checkEngRpm() {
 
 int getSpeed() {
   // 41 0D aa
-  int aa = ParseCharByte(buffer[6+4], buffer[7+4]);
+  int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
   return aa * 0.621371;
 }
 
@@ -223,7 +229,7 @@ void checkSpeed() {
 
 int getCoolant() {
   // 41 05 aa
-  int aa = ParseCharByte(buffer[6+4], buffer[7+4]);
+  int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
   return aa-40;
 }
 
@@ -264,15 +270,15 @@ bool obd_initialise() {
   switch(elm_init_state) {
     case ELM_INIT_STATE_NONE:
       {
-        DEBUG_PORT.println("Init state NONE, moving to DISABLE_ECHO");
-        elm_init_state = ELM_INIT_STATE_DISABLE_ECHO;
+        DEBUG_PORT.println("Init state NONE, moving to SET_ECHO");
+        elm_init_state = ELM_INIT_STATE_SET_ECHO;
         initialised = false;
       }
       break;
 
-    case ELM_INIT_STATE_DISABLE_ECHO:
+    case ELM_INIT_STATE_SET_ECHO:
       {
-        elm_sys_echo(false);
+        elm_sys_echo(true);
         if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
           elm_request_state = ELM_REQ_STATE_READY;
           DEBUG_PORT.println("Init state DISABLE_ECHO, moving to SET_PROTOCOL");

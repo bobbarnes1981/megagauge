@@ -108,11 +108,11 @@ void drawRpm() {
     if (pid_info[OBD_PID_ENG_RPM].stale) {
       col = DIM;
     } // TODO: check warning level
-    drawNumber(100, 130, 125, 38, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
+    drawNumber(100, 210, 125, 38, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
 
     int barWidth = map(constrain(pid_info[OBD_PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
-    tft.fillRoundRect(11, 175, 218, 6, 5, BACKGROUND);
-    tft.fillRoundRect(11, 175, barWidth, 6, 5, AMBER);
+    tft.fillRoundRect(11, 255, 218, 6, 5, BACKGROUND);
+    tft.fillRoundRect(11, 255, barWidth, 6, 5, AMBER);
   }
 }
 
