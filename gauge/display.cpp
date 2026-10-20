@@ -137,6 +137,11 @@ void init_display() {
   if (!screen_display_init) {
     screen_display_init = true;
 
+    // force dirty so they get drawn
+    pid_info[OBD_PID_ENG_RPM].dirty = true;
+    pid_info[OBD_PID_SPEED].dirty = true;
+    pid_info[OBD_PID_COOLANT].dirty = true;
+
     tft.fillScreen(BACKGROUND);
 
     tft.setTextColor(AMBER, BACKGROUND);
