@@ -281,7 +281,7 @@ bool obd_initialise() {
         elm_sys_echo(true);
         if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
           elm_request_state = ELM_REQ_STATE_READY;
-          DEBUG_PORT.println("Init state DISABLE_ECHO, moving to SET_PROTOCOL");
+          DEBUG_PORT.println("Init state SET_ECHO, moving to SET_PROTOCOL");
           elm_init_state = ELM_INIT_STATE_SET_PROTOCOL;
         }
         initialised = false;
