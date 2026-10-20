@@ -68,7 +68,7 @@ void drawLargeNumber(int x, int y, int w, int h, float value, const char* suffix
   sprite.setColorDepth(16);
   sprite.createSprite(w, h);
   sprite.fillSprite(BACKGROUND);
-  sprite.setTextDatum(ML_DATUM);
+  sprite.setTextDatum(MC_DATUM);
   sprite.setTextColor(AMBER, BACKGROUND);
   sprite.drawString(String((int)round(value))+suffix, w / 2, h / 2, f8);
   sprite.pushSprite(x, y);
@@ -94,7 +94,7 @@ void drawCoolant() {
   if (pid_info[OBD_PID_COOLANT].dirty) {
     pid_info[OBD_PID_COOLANT].dirty = false;
     uint16_t col = getColour(OBD_PID_COOLANT);
-    drawNumber(145, 276, 125, 32, pid_info[OBD_PID_COOLANT].value, pid_info[OBD_PID_COOLANT].suffix, col);
+    drawNumber(155, 276, 125, 32, pid_info[OBD_PID_COOLANT].value, pid_info[OBD_PID_COOLANT].suffix, col);
   }
 }
 
@@ -105,7 +105,7 @@ void drawSpeed() {
   if (pid_info[OBD_PID_SPEED].dirty) {
     pid_info[OBD_PID_SPEED].dirty = false;
     uint16_t col = getColour(OBD_PID_SPEED);
-    drawLargeNumber(10, 32, 220, 90, pid_info[OBD_PID_SPEED].value, pid_info[OBD_PID_SPEED].suffix, col);
+    drawLargeNumber(60, 64, 220, 90, pid_info[OBD_PID_SPEED].value, pid_info[OBD_PID_SPEED].suffix, col);
   }
 }
 
@@ -116,7 +116,7 @@ void drawRpm() {
   if (pid_info[OBD_PID_ENG_RPM].dirty) {
     pid_info[OBD_PID_ENG_RPM].dirty = false;
     uint16_t col = getColour(OBD_PID_ENG_RPM);
-    drawNumber(145, 210, 125, 32, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
+    drawNumber(155, 210, 125, 32, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
 
     int barWidth = map(constrain(pid_info[OBD_PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
     tft.fillRoundRect(11, 255, 218, 6, 5, BACKGROUND);
