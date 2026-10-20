@@ -10,9 +10,9 @@
  * defines the PIDs to request and their relevant data
  */
 PIDInfo pid_info[] = {
-  { "RPM",     "",    0,   250,  1000, 0, true, false },
-  { "Speed",   "mph", 0,   100,   500, 0, true, false },
-  { "Coolant", "c",   0,  2000,  5000, 0, true, false }
+  { "RPM",     "",    0,   250,  1000, 0, true, false,  0, 5000 },
+  { "Speed",   "mph", 0,   100,   500, 0, true, false,  0,   70 },
+  { "Coolant", "c",   0,  2000,  5000, 0, true, false, 70,  110 }
 };
 
 #define PID_ECHO_OFFSET 4

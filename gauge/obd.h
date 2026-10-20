@@ -46,6 +46,8 @@ struct PIDInfo {
   unsigned long last_read;
   bool dirty;
   bool stale;
+  int low;
+  int warning;
 };
 
 extern PIDInfo pid_info[];

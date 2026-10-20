@@ -31,6 +31,7 @@ bool screen_initialising_init = false;
 #define AMBER       0xFC00
 #define DIM         0x8200
 #define WARNING     TFT_RED
+#define LOW         TFT_BLUE
 
 /*
  * draw a box
@@ -74,17 +75,26 @@ void drawLargeNumber(int x, int y, int w, int h, float value, const char* suffix
   sprite.deleteSprite();
 }
 
+uint16_t getColour(int8_t obd_pid) {
+  if (pid_info[obd_pid].value > pid_info[obd_pid].warning) {
+    return WARNING;
+  } else if (pid_info[obd_pid].value < pid_info[obd_pid].low) {
+    return LOW;
+  } else if (pid_info[obd_pid].stale) {
+    return DIM;
+  } else {
+    return AMBER;
+  }
+}
+
 /*
  * draw the coolant element
  */
 void drawCoolant() {
   if (pid_info[OBD_PID_COOLANT].dirty) {
     pid_info[OBD_PID_COOLANT].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[OBD_PID_COOLANT].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawNumber(155, 276, 125, 32, pid_info[OBD_PID_COOLANT].value, pid_info[OBD_PID_COOLANT].suffix, col);
+    uint16_t col = getColour(OBD_PID_COOLANT);
+    drawNumber(145, 276, 125, 32, pid_info[OBD_PID_COOLANT].value, pid_info[OBD_PID_COOLANT].suffix, col);
   }
 }
 
@@ -94,10 +104,7 @@ void drawCoolant() {
 void drawSpeed() {
   if (pid_info[OBD_PID_SPEED].dirty) {
     pid_info[OBD_PID_SPEED].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[OBD_PID_SPEED].stale) {
-      col = DIM;
-    } // TODO: check warning level
+    uint16_t col = getColour(OBD_PID_SPEED);
     drawLargeNumber(10, 32, 220, 90, pid_info[OBD_PID_SPEED].value, pid_info[OBD_PID_SPEED].suffix, col);
   }
 }
@@ -108,11 +115,8 @@ void drawSpeed() {
 void drawRpm() {
   if (pid_info[OBD_PID_ENG_RPM].dirty) {
     pid_info[OBD_PID_ENG_RPM].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[OBD_PID_ENG_RPM].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawNumber(155, 210, 125, 32, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
+    uint16_t col = getColour(OBD_PID_ENG_RPM);
+    drawNumber(145, 210, 125, 32, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
 
     int barWidth = map(constrain(pid_info[OBD_PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
     tft.fillRoundRect(11, 255, 218, 6, 5, BACKGROUND);
