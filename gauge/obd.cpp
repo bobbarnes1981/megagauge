@@ -25,6 +25,9 @@ int pointer = 0;
 
 unsigned long m;
 
+#define CONNECTION_COOLDOWN_MS 3000
+unsigned long obd_last_connect_attempt = 0;
+
 bool bt_connected = false;
 int8_t elm_init_state = ELM_INIT_STATE_NONE;
 int8_t elm_request_state = ELM_REQ_STATE_READY;
@@ -263,6 +266,25 @@ void checkCoolant() {
 }
 
 /*
+ *
+ */
+bool obd_connect() {
+  if (bt_connected && ELM_PORT.connected()) {
+    return true;
+  }
+  if (millis() - obd_last_connect_attempt > CONNECTION_COOLDOWN_MS) {
+    elm_init_state = ELM_INIT_STATE_NONE;
+    DEBUG_PORT.println("bt not connected");
+    int8_t prev_state = ui_screen_state;
+    switch_screen_connecting();
+    connect();
+    switch_screen(prev_state);
+    obd_last_connect_attempt = millis();
+  }
+  return false;
+}
+
+/*
  * Initialise if necessary
  */
 bool obd_initialise() {
@@ -318,7 +340,10 @@ void obd_process_bytes() {
     buffer[pointer] = b;
     pointer++;
     if (b == '>') {
-      // TODO: check if successful (has correct num bytes)
+      // TODO: check echo bytes at 0,1,2,3 so we can tell which request this is
+      //       depending on bytes read we can process data and store to variable
+      //       we could discard responses that do not match what we expect
+      //       maybe set the elm_request_state to error?
       for (int i = 0; i < pointer; i++) {
         DEBUG_PORT.write(buffer[i]);
       }
@@ -333,12 +358,7 @@ void obd_process_bytes() {
  * the obd loop
  */
 void obd_loop() {
-  if (!bt_connected || !ELM_PORT.connected()) {
-    elm_init_state = ELM_INIT_STATE_NONE;
-    DEBUG_PORT.println("bt not connected");
-    // TODO: delay between attempts to connect
-    connect();
-  } else {
+  if (obd_connect()) {
     if (obd_initialise()) {
       switch(obd_pid_state) {
         case OBD_PID_ENG_RPM:

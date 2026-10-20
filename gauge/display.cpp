@@ -22,6 +22,8 @@ TFT_eSPI tft = TFT_eSPI();
 bool screen_display_init = false;
 // is the settings screen initialised
 bool screen_settings_init = false;
+// is the connecting screen initialised
+bool screen_connecting_init = false;
 
 #define BACKGROUND  TFT_BLACK
 #define AMBER       0xFC00
@@ -198,18 +200,35 @@ void init_settings() {
 }
 
 /*
+ * draw the connecting screen
+ */
+void draw_connecting() {
+
+}
+
+/*
+ * initialise the connecting screen
+ */
+void init_connecting() {
+  if (!screen_connecting_init) {
+    screen_connecting_init = true;
+
+    tft.fillRoundRect(11, 140, 218, 40, 5, BACKGROUND);
+    tft.fillRoundRect(11, 140, 218, 40, 5, AMBER);
+    
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
+
+    tft.drawString("Connecting...", 10, 150, f2);
+  }
+}
+
+/*
  * setup the display
  */
 void display_setup() {
   tft.init();
   tft.setRotation(0);
-}
-
-/*
- * run the display loop
- */
-void display_loop() {
-
 }
 
 /*
@@ -229,9 +248,17 @@ void display_settings() {
 }
 
 /*
- * display the current screen
+ *
  */
-void display_screen() {
+void display_connecting() {
+  init_connecting();
+  draw_connecting();
+}
+
+/*
+ * run the display loop
+ */
+void display_loop() {
   switch (ui_screen_state) {
     case UI_SCREEN_DISPLAY:
       {
@@ -242,6 +269,12 @@ void display_screen() {
     case UI_SCREEN_SETTINGS:
       {
         display_settings();
+      }
+      break;
+
+    case UI_SCREEN_CONNECTING:
+      {
+        display_connecting();
       }
       break;
   }
@@ -261,4 +294,31 @@ void switch_screen_display() {
 void switch_screen_settings() {
   ui_screen_state = UI_SCREEN_SETTINGS;
   screen_settings_init = false;
+}
+
+/*
+ * switch to show the 'connecting' popover
+ */
+void switch_screen_connecting() {
+  ui_screen_state = UI_SCREEN_CONNECTING;
+  screen_connecting_init = false;
+}
+
+/*
+ *
+ */
+void switch_screen(int8_t state) {
+  switch (state) {
+    case UI_SCREEN_DISPLAY:
+      switch_screen_display();
+      break;
+
+    case UI_SCREEN_SETTINGS:
+      switch_screen_settings();
+      break;
+
+    case UI_SCREEN_CONNECTING:
+      switch_screen_connecting();
+      break;
+  }
 }

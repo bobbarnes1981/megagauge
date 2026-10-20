@@ -22,6 +22,4 @@ void loop() {
   display_loop();
   touch_loop();
   obd_loop();
-
-  display_screen();
 }
