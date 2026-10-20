@@ -41,8 +41,8 @@ struct PIDInfo {
   const char* name;
   const char* suffix;
   int value;
-  int update_time;
-  int stale_time;
+  unsigned long update_time;
+  unsigned long stale_time;
   unsigned long last_read;
   bool dirty;
   bool stale;
