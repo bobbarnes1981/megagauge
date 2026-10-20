@@ -191,9 +191,7 @@ void checkEngRpm() {
     }
     incrementCheck();
   }
-  if (m - pid_info[OBD_PID_ENG_RPM].last_read > pid_info[OBD_PID_ENG_RPM].stale_time) {
-    pid_info[OBD_PID_ENG_RPM].stale = true;
-  }
+  pid_info[OBD_PID_ENG_RPM].stale = ((m - pid_info[OBD_PID_ENG_RPM].last_read) > pid_info[OBD_PID_ENG_RPM].stale_time);
 }
 
 int getSpeed() {
@@ -226,9 +224,7 @@ void checkSpeed() {
     }
     incrementCheck();
   }
-  if (m - pid_info[OBD_PID_SPEED].last_read > pid_info[OBD_PID_SPEED].stale_time) {
-    pid_info[OBD_PID_SPEED].stale = true;
-  }
+  pid_info[OBD_PID_SPEED].stale = ((m - pid_info[OBD_PID_SPEED].last_read) > pid_info[OBD_PID_SPEED].stale_time);
 }
 
 int getCoolant() {
@@ -261,9 +257,7 @@ void checkCoolant() {
     }
     incrementCheck();
   }
-  if (m - pid_info[OBD_PID_COOLANT].last_read > pid_info[OBD_PID_COOLANT].stale_time) {
-    pid_info[OBD_PID_COOLANT].stale = true;
-  }
+  pid_info[OBD_PID_COOLANT].stale = ((m - pid_info[OBD_PID_COOLANT].last_read) > pid_info[OBD_PID_COOLANT].stale_time);
 }
 
 /*
