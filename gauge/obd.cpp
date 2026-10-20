@@ -275,13 +275,13 @@ bool obd_connect() {
   if (millis() - obd_last_connect_attempt > CONNECTION_COOLDOWN_MS) {
     elm_init_state = ELM_INIT_STATE_NONE;
     DEBUG_PORT.println("bt not connected");
-    int8_t prev_state = ui_screen_state;
-    switch_screen_connecting();
-    display_loop();
-    connect();
-    switch_screen(prev_state);
-    display_loop();
-    obd_last_connect_attempt = millis();
+    if (ui_screen_state == UI_SCREEN_DISPLAY) {
+      switch_screen_connecting();
+      display_loop();
+      connect();
+      switch_screen_display();
+      obd_last_connect_attempt = millis();
+    }
   }
   return false;
 }
