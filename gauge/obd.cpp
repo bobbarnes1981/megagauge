@@ -264,9 +264,21 @@ void checkCoolant() {
 float getBattery() {
   // AT RVAT RV13.5V
   // ParseCharNibble actually parses hex but for 0-9 will be fine
-  int t = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0]); // tens
-  int u = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]); // units
-  int f = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+3]); // float
+  int t;
+  int u;
+  int f;
+  if (buffer[5] == 'A' && buffer[6] == 'T' && buffer[8] == 'R' && buffer[9] == 'R') {
+    DEBUG_PORT.println("Detected AT RV echo");
+    t = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0]); // tens
+    u = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]); // units
+    f = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+3]); // float
+  } else {
+    // the cheap bluetooth ELM327 does not echo the 'AT RV' command like the ELMulator
+    DEBUG_PORT.println("No AT RV echo");
+    t = ParseCharNibble(buffer[5+0]); // tens
+    u = ParseCharNibble(buffer[5+1]); // units
+    f = ParseCharNibble(buffer[5+3]); // float
+  }
   t = t * 10;
   f = f != 0 ? f/10 : f;
   return t+u+f;
