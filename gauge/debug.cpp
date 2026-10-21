@@ -41,6 +41,15 @@ void debug_loop() {
     if (pid_info[OBD_PID_COOLANT].stale) {
       DEBUG_PORT.print("*");
     }
+    DEBUG_PORT.print(" ");
+    
+    DEBUG_PORT.print(pid_info[OBD_PID_BATTERY].name);
+    DEBUG_PORT.print(": ");
+    DEBUG_PORT.print(pid_info[OBD_PID_BATTERY].value);
+    DEBUG_PORT.print(pid_info[OBD_PID_BATTERY].suffix);
+    if (pid_info[OBD_PID_BATTERY].stale) {
+      DEBUG_PORT.print("*");
+    }
     DEBUG_PORT.println("");
   }
 }

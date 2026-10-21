@@ -13,10 +13,11 @@ extern BluetoothSerial SerialBT;
 #define ELM_PORT SerialBT
 #define ELM_BAUD 38400
 
-#define MAX_OBD_PIDS 3
+#define MAX_OBD_PIDS 4
 constexpr int8_t OBD_PID_ENG_RPM  = 0;
 constexpr int8_t OBD_PID_SPEED    = 1;
 constexpr int8_t OBD_PID_COOLANT  = 2;
+constexpr int8_t OBD_PID_BATTERY  = 3;
 
 constexpr int8_t ELM_INIT_STATE_NONE            = 0;
 constexpr int8_t ELM_INIT_STATE_SET_ECHO        = 1;
@@ -40,7 +41,7 @@ constexpr int8_t ELM_OBD_REQUEST_COOLANT  = 8;
 struct PIDInfo {
   const char* name;
   const char* suffix;
-  int value;
+  float value;
   unsigned long update_time;
   unsigned long stale_time;
   unsigned long last_read;

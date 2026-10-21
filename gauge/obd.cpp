@@ -12,7 +12,8 @@
 PIDInfo pid_info[] = {
   { "RPM",     "",    0,   250,  1000, 0, true, false,  0, 5000 },
   { "Speed",   "mph", 0,   100,   500, 0, true, false,  0,   70 },
-  { "Coolant", "c",   0,  2000,  5000, 0, true, false, 70,  110 }
+  { "Coolant", "c",   0,  2000,  5000, 0, true, false, 70,  110 },
+  { "Battery", "v",   0,  2000,  5000, 0, true, false, 11,   14 }
 };
 
 #define PID_ECHO_OFFSET 4
@@ -160,7 +161,7 @@ void incrementCheck() {
   }
 }
 
-int getEngRpm() {
+float getEngRpm() {
   // 41 0C aa bb
   int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
   int bb = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+3], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+4]);
@@ -181,7 +182,7 @@ void checkEngRpm() {
     elm_obd_rpm();
   }
   if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
-    int val = getEngRpm();
+    float val = getEngRpm();
     elm_request_state = ELM_REQ_STATE_READY;
     if (pid_info[OBD_PID_ENG_RPM].value != val) {
       DEBUG_PORT.println("got rpm");
@@ -194,7 +195,7 @@ void checkEngRpm() {
   pid_info[OBD_PID_ENG_RPM].stale = ((m - pid_info[OBD_PID_ENG_RPM].last_read) > pid_info[OBD_PID_ENG_RPM].stale_time);
 }
 
-int getSpeed() {
+float getSpeed() {
   // 41 0D aa
   int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
   return aa * 0.621371;
@@ -214,7 +215,7 @@ void checkSpeed() {
     elm_obd_speed();
   }
   if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
-    int val = getSpeed();
+    float val = getSpeed();
     elm_request_state = ELM_REQ_STATE_READY;
     if (pid_info[OBD_PID_SPEED].value != val) {
       DEBUG_PORT.println("got speed");
@@ -227,7 +228,7 @@ void checkSpeed() {
   pid_info[OBD_PID_SPEED].stale = ((m - pid_info[OBD_PID_SPEED].last_read) > pid_info[OBD_PID_SPEED].stale_time);
 }
 
-int getCoolant() {
+float getCoolant() {
   // 41 05 aa
   int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
   return aa-40;
@@ -247,7 +248,7 @@ void checkCoolant() {
     elm_obd_coolant();
   }
   if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
-    int val = getCoolant();
+    float val = getCoolant();
     elm_request_state = ELM_REQ_STATE_READY;
     if (pid_info[OBD_PID_COOLANT].value != val) {
       DEBUG_PORT.println("got coolant");
@@ -258,6 +259,44 @@ void checkCoolant() {
     incrementCheck();
   }
   pid_info[OBD_PID_COOLANT].stale = ((m - pid_info[OBD_PID_COOLANT].last_read) > pid_info[OBD_PID_COOLANT].stale_time);
+}
+
+float getBattery() {
+  // AT RVAT RV13.5V
+  // ParseCharNibble actually parses hex but for 0-9 will be fine
+  int t = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0]); // tens
+  int u = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]); // units
+  int f = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+3]); // float
+  t = t * 10;
+  f = f != 0 ? f/10 : f;
+  return t+u+f;
+}
+
+/*
+ * Request coolant temperature
+ */
+void checkBattery() {
+  m = millis();
+  if (m - pid_info[OBD_PID_BATTERY].last_read < pid_info[OBD_PID_BATTERY].update_time) {
+    incrementCheck();
+    return;
+  }
+  if (elm_request_state == ELM_REQ_STATE_READY) {
+    DEBUG_PORT.println("requesting voltage");
+    elm_sys_volt();
+  }
+  if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
+    float val = getBattery();
+    elm_request_state = ELM_REQ_STATE_READY;
+    if (pid_info[OBD_PID_BATTERY].value != val) {
+      DEBUG_PORT.println("got voltage");
+      pid_info[OBD_PID_BATTERY].last_read = m;
+      pid_info[OBD_PID_BATTERY].value = val;
+      pid_info[OBD_PID_BATTERY].dirty = true;
+    }
+    incrementCheck();
+  }
+  pid_info[OBD_PID_BATTERY].stale = ((m - pid_info[OBD_PID_BATTERY].last_read) > pid_info[OBD_PID_BATTERY].stale_time);
 }
 
 /*
@@ -334,20 +373,20 @@ bool obd_initialise() {
  */
 int8_t obd_detect_response() {
   int8_t resp = -1;
-  if (pointer >= 4) {
-    if (buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == 'C') {
-      DEBUG_PORT.printf("detected rpm\n");
-      resp = ELM_OBD_REQUEST_RPM;
-    } else if (buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == 'D') {
-      DEBUG_PORT.printf("detected speed\n");
-      resp = ELM_OBD_REQUEST_SPEED;
-    } else if (buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == '5') {
-      DEBUG_PORT.printf("detected coolant\n");
-      resp = ELM_OBD_REQUEST_COOLANT;
-    } else {
-      DEBUG_PORT.printf("failed detection %c%c%c%c", buffer[0], buffer[1], buffer[2], buffer[3]);
-    }
-
+  if (pointer >= 4 && buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == 'C') {
+    DEBUG_PORT.printf("detected rpm\n");
+    resp = ELM_OBD_REQUEST_RPM;
+  } else if (pointer >= 4 && buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == 'D') {
+    DEBUG_PORT.printf("detected speed\n");
+    resp = ELM_OBD_REQUEST_SPEED;
+  } else if (pointer >= 4 && buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == '5') {
+    DEBUG_PORT.printf("detected coolant\n");
+    resp = ELM_OBD_REQUEST_COOLANT;
+  } else if (pointer >= 5 && buffer[0] == 'A' && buffer[1] == 'T' && buffer[2] == ' ' && buffer[3] == 'R' && buffer[4] == 'V') {
+    DEBUG_PORT.printf("detected battery\n");
+    resp = ELM_SYS_REQUEST_VOLT;
+  } else {
+    DEBUG_PORT.printf("failed detection %c%c%c%c\n", buffer[0], buffer[1], buffer[2], buffer[3]);
   }
   return resp;
 }
@@ -404,6 +443,12 @@ void obd_loop() {
         case OBD_PID_COOLANT:
           {
             checkCoolant();
+          }
+          break;
+
+        case OBD_PID_BATTERY:
+          {
+            checkBattery();
           }
           break;
       }

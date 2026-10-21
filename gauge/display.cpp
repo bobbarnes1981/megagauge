@@ -47,14 +47,14 @@ void drawBox(int x, int y, int w, int h, const char* title) {
 /*
  * draw a number
  */
-void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uint16_t colour) {
+void drawNumber(int x, int y, int w, int h, String value, const char* suffix, uint16_t colour) {
   TFT_eSprite s = TFT_eSprite(&tft);
   s.setColorDepth(16);
   s.createSprite(w, h);
   s.fillSprite(BACKGROUND);
   s.setTextDatum(MR_DATUM);
   s.setTextColor(colour, BACKGROUND);
-  String text = String((int)round(value)) + suffix;
+  String text = value + suffix;
   s.drawString(text,  w / 2, h / 2, f4);
   s.pushSprite(x, y);
   s.deleteSprite();
@@ -63,14 +63,14 @@ void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uin
 /*
  * draw a large number
  */
-void drawLargeNumber(int x, int y, int w, int h, float value, const char* suffix, uint16_t colour) {
+void drawLargeNumber(int x, int y, int w, int h, String value, const char* suffix, uint16_t colour) {
   TFT_eSprite sprite(&tft);
   sprite.setColorDepth(16);
   sprite.createSprite(w, h);
   sprite.fillSprite(BACKGROUND);
   sprite.setTextDatum(MC_DATUM);
-  sprite.setTextColor(AMBER, BACKGROUND);
-  sprite.drawString(String((int)round(value))+suffix, w / 2, h / 2, f8);
+  sprite.setTextColor(colour, BACKGROUND);
+  sprite.drawString(value + suffix, w / 2, h / 2, f8);
   sprite.pushSprite(x, y);
   sprite.deleteSprite();
 }
@@ -88,24 +88,13 @@ uint16_t getColour(int8_t obd_pid) {
 }
 
 /*
- * draw the coolant element
- */
-void drawCoolant() {
-  if (pid_info[OBD_PID_COOLANT].dirty) {
-    pid_info[OBD_PID_COOLANT].dirty = false;
-    uint16_t col = getColour(OBD_PID_COOLANT);
-    drawNumber(155, 276, 125, 32, pid_info[OBD_PID_COOLANT].value, pid_info[OBD_PID_COOLANT].suffix, col);
-  }
-}
-
-/*
  * draw the speed element
  */
 void drawSpeed() {
   if (pid_info[OBD_PID_SPEED].dirty) {
     pid_info[OBD_PID_SPEED].dirty = false;
     uint16_t col = getColour(OBD_PID_SPEED);
-    drawLargeNumber(60, 64, 220, 90, pid_info[OBD_PID_SPEED].value, pid_info[OBD_PID_SPEED].suffix, col);
+    drawLargeNumber(60, 54, 220, 90, String((int)round(pid_info[OBD_PID_SPEED].value)), pid_info[OBD_PID_SPEED].suffix, col);
   }
 }
 
@@ -116,11 +105,33 @@ void drawRpm() {
   if (pid_info[OBD_PID_ENG_RPM].dirty) {
     pid_info[OBD_PID_ENG_RPM].dirty = false;
     uint16_t col = getColour(OBD_PID_ENG_RPM);
-    drawNumber(155, 210, 125, 32, pid_info[OBD_PID_ENG_RPM].value, pid_info[OBD_PID_ENG_RPM].suffix, col);
+    drawNumber(155, 170, 125, 32, String((int)round(pid_info[OBD_PID_ENG_RPM].value)), pid_info[OBD_PID_ENG_RPM].suffix, col);
 
-    int barWidth = map(constrain(pid_info[OBD_PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
-    tft.fillRoundRect(11, 255, 218, 6, 5, BACKGROUND);
-    tft.fillRoundRect(11, 255, barWidth, 6, 5, AMBER);
+    int barWidth = map(constrain((int)round(pid_info[OBD_PID_ENG_RPM].value), 0, 7000), 0, 7000, 0, 218);
+    tft.fillRoundRect(11, 215, 218, 6, 5, BACKGROUND);
+    tft.fillRoundRect(11, 215, barWidth, 6, 5, AMBER);
+  }
+}
+
+/*
+ * draw the battery element
+ */
+void drawBattery() {
+  if (pid_info[OBD_PID_BATTERY].dirty) {
+    pid_info[OBD_PID_BATTERY].dirty = false;
+    uint16_t col = getColour(OBD_PID_BATTERY);
+    drawNumber(155, 236, 125, 32, String(pid_info[OBD_PID_BATTERY].value), pid_info[OBD_PID_BATTERY].suffix, col);
+  }
+}
+
+/*
+ * draw the coolant element
+ */
+void drawCoolant() {
+  if (pid_info[OBD_PID_COOLANT].dirty) {
+    pid_info[OBD_PID_COOLANT].dirty = false;
+    uint16_t col = getColour(OBD_PID_COOLANT);
+    drawNumber(155, 276, 125, 32, String((int)round(pid_info[OBD_PID_COOLANT].value)), pid_info[OBD_PID_COOLANT].suffix, col);
   }
 }
 
@@ -128,9 +139,10 @@ void drawRpm() {
  * draw the display screen
  */
 void draw_display() {
-  drawCoolant();
   drawSpeed();
   drawRpm();
+  drawBattery();
+  drawCoolant();
   // TODO: show connection status
 }
 
@@ -142,8 +154,9 @@ void init_display() {
     screen_display_init = true;
 
     // force dirty so they get drawn
-    pid_info[OBD_PID_ENG_RPM].dirty = true;
     pid_info[OBD_PID_SPEED].dirty = true;
+    pid_info[OBD_PID_ENG_RPM].dirty = true;
+    pid_info[OBD_PID_BATTERY].dirty = true;
     pid_info[OBD_PID_COOLANT].dirty = true;
 
     tft.fillScreen(BACKGROUND);
@@ -156,9 +169,10 @@ void init_display() {
 
     tft.setTextColor(AMBER, BACKGROUND);
     tft.setTextDatum(TL_DATUM);
-    tft.drawString("RPM", 15, 220, f2);
-    tft.drawRoundRect(10, 254, 220, 8, 5, DIM);
+    tft.drawString("RPM", 15, 180, f2);
+    tft.drawRoundRect(10, 214, 220, 8, 5, DIM);
 
+    drawBox(5, 234, 230, 36, "BATTERY");
     drawBox(5, 274, 230, 36, "COOLANT");
   }
 }
