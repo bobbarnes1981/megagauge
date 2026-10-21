@@ -264,9 +264,9 @@ void checkCoolant() {
 float getBattery() {
   // AT RVAT RV13.5V
   // ParseCharNibble actually parses hex but for 0-9 will be fine
-  int t;
-  int u;
-  int f;
+  float t;
+  float u;
+  float f;
   if (buffer[5] == 'A' && buffer[6] == 'T' && buffer[8] == 'R' && buffer[9] == 'R') {
     DEBUG_PORT.println("Detected AT RV echo");
     t = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0]); // tens
@@ -279,8 +279,9 @@ float getBattery() {
     u = ParseCharNibble(buffer[5+1]); // units
     f = ParseCharNibble(buffer[5+3]); // float
   }
+  DEBUG_PORT.printf("battery %d%d.%d\n", t, u, f);
   t = t * 10;
-  f = f != 0 ? f/10 : f;
+  f = f != 0 ? f/10.0 : f;
   return t+u+f;
 }
 
