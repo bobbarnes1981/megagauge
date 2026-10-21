@@ -94,7 +94,7 @@ void drawSpeed() {
   if (pid_info[OBD_PID_SPEED].dirty) {
     pid_info[OBD_PID_SPEED].dirty = false;
     uint16_t col = getColour(OBD_PID_SPEED);
-    drawLargeNumber(60, 54, 220, 90, String((int)round(pid_info[OBD_PID_SPEED].value)), pid_info[OBD_PID_SPEED].suffix, col);
+    drawLargeNumber(60, 54, 220, 90, String(pid_info[OBD_PID_SPEED].value, 0), pid_info[OBD_PID_SPEED].suffix, col);
   }
 }
 
@@ -105,7 +105,7 @@ void drawRpm() {
   if (pid_info[OBD_PID_ENG_RPM].dirty) {
     pid_info[OBD_PID_ENG_RPM].dirty = false;
     uint16_t col = getColour(OBD_PID_ENG_RPM);
-    drawNumber(155, 170, 125, 32, String((int)round(pid_info[OBD_PID_ENG_RPM].value)), pid_info[OBD_PID_ENG_RPM].suffix, col);
+    drawNumber(155, 170, 125, 32, String(pid_info[OBD_PID_ENG_RPM].value, 0), pid_info[OBD_PID_ENG_RPM].suffix, col);
 
     int barWidth = map(constrain((int)round(pid_info[OBD_PID_ENG_RPM].value), 0, 7000), 0, 7000, 0, 218);
     tft.fillRoundRect(11, 215, 218, 6, 5, BACKGROUND);
@@ -120,7 +120,7 @@ void drawBattery() {
   if (pid_info[OBD_PID_BATTERY].dirty) {
     pid_info[OBD_PID_BATTERY].dirty = false;
     uint16_t col = getColour(OBD_PID_BATTERY);
-    drawNumber(155, 236, 125, 32, String(pid_info[OBD_PID_BATTERY].value), pid_info[OBD_PID_BATTERY].suffix, col);
+    drawNumber(155, 236, 125, 32, String(pid_info[OBD_PID_BATTERY].value, 1), pid_info[OBD_PID_BATTERY].suffix, col);
   }
 }
 
@@ -131,7 +131,7 @@ void drawCoolant() {
   if (pid_info[OBD_PID_COOLANT].dirty) {
     pid_info[OBD_PID_COOLANT].dirty = false;
     uint16_t col = getColour(OBD_PID_COOLANT);
-    drawNumber(155, 276, 125, 32, String((int)round(pid_info[OBD_PID_COOLANT].value)), pid_info[OBD_PID_COOLANT].suffix, col);
+    drawNumber(155, 276, 125, 32, String(pid_info[OBD_PID_COOLANT].value, 0), pid_info[OBD_PID_COOLANT].suffix, col);
   }
 }
 
