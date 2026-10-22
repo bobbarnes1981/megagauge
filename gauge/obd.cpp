@@ -20,6 +20,7 @@ PIDInfo pid_info[] = {
 #define PID_CMD_OFFSET 6
 
 int8_t obd_pid_state = OBD_PID_ENG_RPM;
+int8_t bus_status = BUS_STATUS_NONE;
 
 int buffer[BUFFER_SIZE];
 int pointer = 0;
@@ -145,10 +146,17 @@ bool connect() {
     bt_connected = false;
     return false;
   }
-  DEBUG_PORT.println("SUCCESS");
 
+  DEBUG_PORT.println("SUCCESS");
   bt_connected = true;
   return true;
+}
+
+void remove_buffer(int start, int length) {
+  for (int i = start; i < pointer-length; i++) {
+    buffer[i] = buffer[i+length];
+  }
+  pointer = pointer - length;
 }
 
 /*
@@ -162,6 +170,9 @@ void incrementCheck() {
 }
 
 float getEngRpm() {
+  if (bus_status == BUS_STATUS_ERROR) {
+    return 0.0;
+  }
   // 41 0C aa bb
   int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
   int bb = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+3], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+4]);
@@ -196,6 +207,9 @@ void checkEngRpm() {
 }
 
 float getSpeed() {
+  if (bus_status == BUS_STATUS_ERROR) {
+    return 0.0;
+  }
   // 41 0D aa
   int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
   return aa * 0.621371;
@@ -229,6 +243,9 @@ void checkSpeed() {
 }
 
 float getCoolant() {
+  if (bus_status == BUS_STATUS_ERROR) {
+    return 0.0;
+  }
   // 41 05 aa
   int aa = ParseCharByte(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0], buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]);
   return aa-40;
@@ -262,6 +279,9 @@ void checkCoolant() {
 }
 
 float getBattery() {
+  if (bus_status == BUS_STATUS_ERROR) {
+    return 0.0;
+  }
   // AT RVAT RV13.5V
   // ParseCharNibble actually parses hex but for 0-9 will be fine
   int offset = 0;
@@ -319,6 +339,7 @@ bool obd_connect() {
   }
   if (millis() - obd_last_connect_attempt > CONNECTION_COOLDOWN_MS) {
     elm_init_state = ELM_INIT_STATE_NONE;
+    bus_status = BUS_STATUS_NONE;
     DEBUG_PORT.println("bt not connected");
     if (ui_screen_state == UI_SCREEN_DISPLAY) {
       switch_screen_connecting();
@@ -384,6 +405,20 @@ bool obd_initialise() {
  */
 int8_t obd_detect_response() {
   int8_t resp = -1;
+  /*
+   * initial request can include 'BUS INIT: OK' after pid echo e.g. 010CBUS INIT: OK41 0C 00 00 >
+   * pid requests can include 'BUS INIT: ERROR' after pid echo e.g. 010CBUS INIT: ERROR >
+   */
+  if (pointer >= 15 && buffer[14] == 'O' && buffer[15] == 'K') { // plenty of scope for this to go wrong
+    DEBUG_PORT.println("bus init ok");
+    remove_buffer(4, 12);
+    bus_status = BUS_STATUS_OK;
+  } else if (pointer >= 18 && buffer[14] == 'E' && buffer[15] == 'R') { // plenty of scope for this to go wrong
+    DEBUG_PORT.println("bus init error");
+    remove_buffer(4, 15);
+    bus_status = BUS_STATUS_ERROR;
+  }
+
   if (pointer >= 4 && buffer[0] == '0' && buffer[1] == '1' && buffer[2] == '0' && buffer[3] == 'C') {
     DEBUG_PORT.printf("detected rpm\n");
     resp = ELM_OBD_REQUEST_RPM;
@@ -415,12 +450,6 @@ void obd_process_bytes() {
     }
     if (b == '>') {
       DEBUG_PORT.println("detected '>'");
-      /*
-       * TODO:
-       * initial request can include 'BUS INIT: OK' after pid echo e.g. 010CBUS INIT: OK41 0C 00 00 >
-       * pid requests can include 'BUS INIT: ERROR' after pid echo e.g. 010CBUS INIT: ERROR >
-       * detect what the response is supposed to be
-       */
       obd_detect_response();
       for (int i = 0; i < pointer; i++) {
         DEBUG_PORT.write(buffer[i]);

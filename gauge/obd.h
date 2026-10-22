@@ -38,6 +38,10 @@ constexpr int8_t ELM_OBD_REQUEST_RPM      = 6;
 constexpr int8_t ELM_OBD_REQUEST_SPEED    = 7;
 constexpr int8_t ELM_OBD_REQUEST_COOLANT  = 8;
 
+constexpr int8_t BUS_STATUS_NONE  = 0;
+constexpr int8_t BUS_STATUS_ERROR = 1;
+constexpr int8_t BUS_STATUS_OK    = 2;
+
 struct PIDInfo {
   const char* name;
   const char* suffix;
