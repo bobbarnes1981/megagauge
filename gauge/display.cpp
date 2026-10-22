@@ -1,39 +1,41 @@
+#include <adapter.h>
 #include <debug.h>
 #include <display.h>
 #include <obd.h>
 
-#include "Preferences.h"
-#include "SPI.h"
 #include "TFT_eSPI.h"
-#include "XPT2046_Touchscreen.h"
 
-int8_t ui_state = UI_DISPLAY;
+// current screen state
+int8_t ui_screen_state = UI_SCREEN_DISPLAY;
+
+// fonts 2, 4 and 8
 uint8_t f2 = 2;
 uint8_t f4 = 4;
 uint8_t f8 = 8;
 
-unsigned long LONG_PRESS_MS = 800;
-bool prev_touch = false;
-bool handled = false;
-unsigned long touch_start = 0;
-
-SPIClass touchSPI(VSPI);
-XPT2046_Touchscreen touch(XPT2046_CS, XPT2046_IRQ);
-
+/*
+ * the tft object
+ */
 TFT_eSPI tft = TFT_eSPI();
 
-Preferences preferences;
-
-bool display_init = false;
-bool settings_init = false;
-
-#define BT_ON_SCREEN 4
+// is the display screen initialised
+bool screen_display_init = false;
+// is the settings screen initialised
+bool screen_settings_init = false;
+// is the connecting screen initialised
+bool screen_connecting_init = false;
+// is the initialising screen initialised
+bool screen_initialising_init = false;
 
 #define BACKGROUND  TFT_BLACK
 #define AMBER       0xFC00
 #define DIM         0x8200
 #define WARNING     TFT_RED
+#define LOW         TFT_BLUE
 
+/*
+ * draw a box
+ */
 void drawBox(int x, int y, int w, int h, const char* title) {
   tft.fillRoundRect(x, y, w, h, 4, BACKGROUND);
   tft.drawRoundRect(x, y, w, h, 4, DIM);
@@ -42,101 +44,120 @@ void drawBox(int x, int y, int w, int h, const char* title) {
   tft.drawString(title, x + 8, y + h / 2, f2);
 }
 
-void drawNumber(int x, int y, int w, int h, float value, const char* suffix, uint16_t colour) {
+/*
+ * draw a number
+ */
+void drawNumber(int x, int y, int w, int h, String value, const char* suffix, uint16_t colour) {
   TFT_eSprite s = TFT_eSprite(&tft);
   s.setColorDepth(16);
   s.createSprite(w, h);
   s.fillSprite(BACKGROUND);
-  s.setTextDatum(ML_DATUM);
+  s.setTextDatum(MR_DATUM);
   s.setTextColor(colour, BACKGROUND);
-  String text = String((int)round(value)) + suffix;
+  String text = value + suffix;
   s.drawString(text,  w / 2, h / 2, f4);
   s.pushSprite(x, y);
   s.deleteSprite();
 }
 
-void drawLargeNumber(int x, int y, int w, int h, float value, const char* suffix, uint16_t colour) {
-    TFT_eSprite sprite(&tft);
-    sprite.setColorDepth(16);
-    sprite.createSprite(w, h);
-    sprite.fillSprite(BACKGROUND);
-    sprite.setTextDatum(ML_DATUM);
-    sprite.setTextColor(AMBER, BACKGROUND);
-    sprite.drawString(String((int)round(value))+suffix, w / 2, h / 2, f8);
-    sprite.pushSprite(x, y);
-    sprite.deleteSprite();
+/*
+ * draw a large number
+ */
+void drawLargeNumber(int x, int y, int w, int h, String value, const char* suffix, uint16_t colour) {
+  TFT_eSprite sprite(&tft);
+  sprite.setColorDepth(16);
+  sprite.createSprite(w, h);
+  sprite.fillSprite(BACKGROUND);
+  sprite.setTextDatum(MC_DATUM);
+  sprite.setTextColor(colour, BACKGROUND);
+  sprite.drawString(value + suffix, w / 2, h / 2, f8);
+  sprite.pushSprite(x, y);
+  sprite.deleteSprite();
 }
 
-void drawAmbient() {
-  if (pid_info[PID_TEMP].dirty) {
-    uint16_t col = AMBER;
-    if (pid_info[PID_TEMP].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    pid_info[PID_TEMP].dirty = false;
-    drawNumber(145, 196, 85, 32, pid_info[PID_TEMP].value, pid_info[PID_TEMP].suffix, col);
+uint16_t getColour(int8_t obd_pid) {
+  if (pid_info[obd_pid].value > pid_info[obd_pid].warning) {
+    return WARNING;
+  } else if (pid_info[obd_pid].value < pid_info[obd_pid].low) {
+    return LOW;
+  } else if (pid_info[obd_pid].stale) {
+    return DIM;
+  } else {
+    return AMBER;
   }
 }
 
-void drawWater() {
-  if (pid_info[PID_COOLANT].dirty) {
-    pid_info[PID_COOLANT].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[PID_COOLANT].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawNumber(145, 236, 85, 32, pid_info[PID_COOLANT].value, pid_info[PID_COOLANT].suffix, col);
-  }
-}
-
-void drawOil() {
-  if (pid_info[PID_OIL].dirty) {
-    pid_info[PID_OIL].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[PID_OIL].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawNumber(145, 276, 85, 32, pid_info[PID_OIL].value, pid_info[PID_OIL].suffix, col);
-  }
-}
-
+/*
+ * draw the speed element
+ */
 void drawSpeed() {
-  if (pid_info[PID_SPEED].dirty) {
-    pid_info[PID_SPEED].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[PID_SPEED].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawLargeNumber(10, 32, 220, 90, pid_info[PID_SPEED].value, pid_info[PID_SPEED].suffix, col);
+  if (pid_info[OBD_PID_SPEED].dirty) {
+    pid_info[OBD_PID_SPEED].dirty = false;
+    uint16_t col = getColour(OBD_PID_SPEED);
+    drawLargeNumber(60, 54, 220, 90, String(pid_info[OBD_PID_SPEED].value, 0), pid_info[OBD_PID_SPEED].suffix, col);
   }
 }
 
+/*
+ * draw the rpm element
+ */
 void drawRpm() {
-  if (pid_info[PID_ENG_RPM].dirty) {
-    pid_info[PID_ENG_RPM].dirty = false;
-    uint16_t col = AMBER;
-    if (pid_info[PID_ENG_RPM].stale) {
-      col = DIM;
-    } // TODO: check warning level
-    drawNumber(100, 130, 125, 38, pid_info[PID_ENG_RPM].value, pid_info[PID_ENG_RPM].suffix, col);
+  if (pid_info[OBD_PID_ENG_RPM].dirty) {
+    pid_info[OBD_PID_ENG_RPM].dirty = false;
+    uint16_t col = getColour(OBD_PID_ENG_RPM);
+    drawNumber(155, 170, 125, 32, String(pid_info[OBD_PID_ENG_RPM].value, 0), pid_info[OBD_PID_ENG_RPM].suffix, col);
 
-    int barWidth = map(constrain(pid_info[PID_ENG_RPM].value, 0, 7000), 0, 7000, 0, 218);
-    tft.fillRoundRect(11, 175, 218, 6, 5, BACKGROUND);
-    tft.fillRoundRect(11, 175, barWidth, 6, 5, AMBER);
+    int barWidth = map(constrain((int)round(pid_info[OBD_PID_ENG_RPM].value), 0, 7000), 0, 7000, 0, 218);
+    tft.fillRoundRect(11, 215, 218, 6, 5, BACKGROUND);
+    tft.fillRoundRect(11, 215, barWidth, 6, 5, AMBER);
   }
 }
 
+/*
+ * draw the battery element
+ */
+void drawBattery() {
+  if (pid_info[OBD_PID_BATTERY].dirty) {
+    pid_info[OBD_PID_BATTERY].dirty = false;
+    uint16_t col = getColour(OBD_PID_BATTERY);
+    drawNumber(155, 236, 125, 32, String(pid_info[OBD_PID_BATTERY].value, 1), pid_info[OBD_PID_BATTERY].suffix, col);
+  }
+}
+
+/*
+ * draw the coolant element
+ */
+void drawCoolant() {
+  if (pid_info[OBD_PID_COOLANT].dirty) {
+    pid_info[OBD_PID_COOLANT].dirty = false;
+    uint16_t col = getColour(OBD_PID_COOLANT);
+    drawNumber(155, 276, 125, 32, String(pid_info[OBD_PID_COOLANT].value, 0), pid_info[OBD_PID_COOLANT].suffix, col);
+  }
+}
+
+/*
+ * draw the display screen
+ */
 void draw_display() {
-  drawAmbient();
-  drawWater();
-  drawOil();
   drawSpeed();
   drawRpm();
+  drawBattery();
+  drawCoolant();
+  // TODO: show connection status
 }
 
+/*
+ * initialise the display screen
+ */
 void init_display() {
-  if (!display_init) {
-    display_init = true;
+  if (!screen_display_init) {
+    screen_display_init = true;
+
+    // force dirty so they get drawn
+    pid_info[OBD_PID_SPEED].dirty = true;
+    pid_info[OBD_PID_ENG_RPM].dirty = true;
+    pid_info[OBD_PID_BATTERY].dirty = true;
+    pid_info[OBD_PID_COOLANT].dirty = true;
 
     tft.fillScreen(BACKGROUND);
 
@@ -146,25 +167,28 @@ void init_display() {
     tft.drawString("MINI/R50", 5, 5, f2);
     tft.drawFastHLine(8, 26, 230, DIM);
 
-    drawBox(5, 194, 230, 36, "AMBIENT");
-    drawBox(5, 234, 230, 36, "WATER");
-    drawBox(5, 274, 230, 36, "OIL");
-
-    // rpm
     tft.setTextColor(AMBER, BACKGROUND);
     tft.setTextDatum(TL_DATUM);
-    tft.drawString("RPM", 15, 140, f2);
-    tft.drawRoundRect(10, 174, 220, 8, 5, DIM);
+    tft.drawString("RPM", 15, 180, f2);
+    tft.drawRoundRect(10, 214, 220, 8, 5, DIM);
+
+    drawBox(5, 234, 230, 36, "BATTERY");
+    drawBox(5, 274, 230, 36, "COOLANT");
   }
 }
 
+/*
+ * draw the settings screen
+ */
 void draw_settings() {
-  if (device_count == 0) {
+  if (bt_device_count == 0) {
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
     tft.drawString("No devices found", 10, 60, 2);
   }
-  for (int i = 0; i < device_count && i < BT_ON_SCREEN; i++) {
+  for (int i = 0; i < bt_device_count && i < BT_ON_SCREEN; i++) {
     int y = 48 + (i * 53); // TODO: use defines for these magic numbers
-    uint16_t border = i == selected_bt_device ? AMBER : DIM;
+    uint16_t border = i == bt_device_index ? AMBER : DIM;
     tft.drawRoundRect(5, y, 230, 48, 4, border);
     tft.setTextColor(AMBER, BACKGROUND);
     tft.setTextDatum(TL_DATUM);
@@ -181,9 +205,12 @@ void draw_settings() {
   tft.drawString("SELECT", 180, 291, 2);
 }
 
+/*
+ * initialise the settings screen
+ */
 void init_settings() {
-  if (!settings_init) {
-    settings_init = true;
+  if (!screen_settings_init) {
+    screen_settings_init = true;
 
     tft.fillScreen(BACKGROUND);
 
@@ -193,86 +220,181 @@ void init_settings() {
     tft.drawString("Bluetooth", 5, 5, f2);
     tft.drawFastHLine(8, 26, 230, DIM);
 
-    obd_scan();
+    adapter_scan();
   }
 }
 
+/*
+ * draw the connecting screen
+ */
+void draw_connecting() {
+
+}
+
+/*
+ * initialise the connecting screen
+ */
+void init_connecting() {
+  if (!screen_connecting_init) {
+    screen_connecting_init = true;
+
+    tft.fillRoundRect(11, 140, 218, 40, 5, BACKGROUND);
+    tft.drawRoundRect(11, 140, 218, 40, 5, AMBER);
+    
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
+
+    tft.drawString("Connecting...", 20, 154, f2);
+  }
+}
+
+/*
+ * draw the initialising screen
+ */
+void draw_initialising() {
+
+}
+
+/*
+ * initialise the initialising screen
+ */
+void init_initialising() {
+  if (!screen_initialising_init) {
+    screen_initialising_init = true;
+
+    tft.fillRoundRect(11, 140, 218, 40, 5, BACKGROUND);
+    tft.drawRoundRect(11, 140, 218, 40, 5, AMBER);
+    
+    tft.setTextColor(AMBER, BACKGROUND);
+    tft.setTextDatum(TL_DATUM);
+
+    tft.drawString("Initialising...", 20, 154, f2);
+  }
+}
+
+/*
+ * setup the display
+ */
 void display_setup() {
   tft.init();
   tft.setRotation(0);
-  
-  display_display();
-
-  touchSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
-  touch.begin(touchSPI);
-  touch.setRotation(0);
 }
 
-void display_touch() {
-  uint16_t x;
-  uint16_t y;
-  if (touch.touched()) {
-    unsigned long m = millis();
-    TS_Point p = touch.getPoint();
-
-    int x = map(p.x, TS_MINX, TS_MAXX, 0, tft.width());
-    int y = map(p.y, TS_MINY, TS_MAXY, 0, tft.height());
-    //Serial.printf("Touch X: %d, Y: %d, Pressure: %d, Start: %d, Elapsed: %d\n", x, y, p.z, touch_start, m - touch_start);
-
-    switch (ui_state) {
-      case UI_DISPLAY:
-        {
-          if (!prev_touch) {
-            touch_start = m;
-            prev_touch = true;
-            handled = false;
-          }
-          if (!handled && m - touch_start >= LONG_PRESS_MS) {
-            handled = true;
-            ui_state = UI_SETTINGS;
-          }
-        }
-        break;
-
-      case UI_SETTINGS:
-        {
-          if (y > 48 && y < 260) {
-            int i = (y - 48) / 53; // TODO: use defines for these magic numbers
-            if (i >= 0 && i < BT_ON_SCREEN && i < device_count) {
-              selected_bt_device = i;
-            }
-          } else if (y > 260) {
-            if (x < 120) {
-              // reinit screen to force rescan
-              settings_init = false;
-            }
-            if (x > 120 && selected_bt_device != -1) {
-              // save the selected mac address
-              obd_save();
-              if (obd_load()) {
-                ui_state = UI_DISPLAY;
-                display_init = false;
-              }
-            }
-          }
-        }
-        break;
-    }
-  } else {
-    prev_touch = false;
-  }
-}
-
+/*
+ * display the display screen
+ */
 void display_display() {
-  // show speed, rpm, water, oil and ambient
-  // maybe show status text when connecting and initialising
   init_display();
   draw_display();
 }
 
+/*
+ * display the settings screen
+ */
 void display_settings() {
-  // show current mac, button to scan for bt, orientation selection?
   init_settings();
   draw_settings();
 }
 
+/*
+ *
+ */
+void display_connecting() {
+  init_connecting();
+  draw_connecting();
+}
+
+
+/*
+ *
+ */
+void display_initialising() {
+  init_initialising();
+  draw_initialising();
+}
+
+/*
+ * run the display loop
+ */
+void display_loop() {
+  switch (ui_screen_state) {
+    case UI_SCREEN_DISPLAY:
+      {
+        display_display();
+      }
+      break;
+    
+    case UI_SCREEN_SETTINGS:
+      {
+        display_settings();
+      }
+      break;
+
+    case UI_SCREEN_CONNECTING:
+      {
+        display_connecting();
+      }
+      break;
+
+    case UI_SCREEN_INITIALISING:
+      {
+        display_initialising();
+      }
+      break;
+  }
+}
+
+/*
+ * switch to the display screen
+ */
+void switch_screen_display() {
+  ui_screen_state = UI_SCREEN_DISPLAY;
+  screen_display_init = false;
+}
+
+/*
+ * switch to the settings screen
+ */
+void switch_screen_settings() {
+  ui_screen_state = UI_SCREEN_SETTINGS;
+  screen_settings_init = false;
+}
+
+/*
+ * switch to show the 'connecting' popover
+ */
+void switch_screen_connecting() {
+  ui_screen_state = UI_SCREEN_CONNECTING;
+  screen_connecting_init = false;
+}
+
+/*
+ * switch to show the 'initialising' popover
+ */
+void switch_screen_initialising() {
+  ui_screen_state = UI_SCREEN_INITIALISING;
+  screen_initialising_init = false;
+}
+
+/*
+ *
+ */
+void switch_screen(int8_t state) {
+  switch (state) {
+    case UI_SCREEN_DISPLAY:
+      switch_screen_display();
+      break;
+
+    case UI_SCREEN_SETTINGS:
+      switch_screen_settings();
+      break;
+
+    case UI_SCREEN_CONNECTING:
+      switch_screen_connecting();
+      break;
+
+    case UI_SCREEN_INITIALISING:
+      switch_screen_initialising();
+      break;
+  }
+}

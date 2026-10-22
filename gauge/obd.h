@@ -3,78 +3,59 @@
 
 #include <gauge.h>
 
-#include "ELMduino.h"
 #include "BluetoothSerial.h"
 
-const bool ELM_DEBUG        = true;
-const int ELM_TIMEOUT_SECS  = 2000; // 2 secs
-
-
-
- /*
-  * Protocol - Description
-  * 0        - Automatic
-  * 1        - SAE J1850 PWM (41.6 kbaud)
-  * 2        - SAE J1850 PWM (10.4 kbaud)
-  * 3        - ISO 9141-2 (5 baud init)
-  * 4        - ISO 14230-4 KWP (5 baud init)
-  * 5        - ISO 14230-4 KWP (fast init)
-  * 6        - ISO 15765-4 CAN (11 bit ID, 500 kbaud)
-  * 7        - ISO 15765-4 CAN (29 bit ID, 500 kbaud)
-  * 8        - ISO 15765-4 CAN (11 bit ID, 250 kbaud)
-  * 9        - ISO 15765-4 CAN (29 bit ID, 250 kbaud)
-  * A        - SAE J1939 CAN (29 bit ID, 250* kbaud)
-  * B        - User1 CAN (11* bit ID, 125* kbaud)
-  * C        - User2 CAN (11* bit ID, 50* kbaud)
-  */
-const int ELM_PROTOCOL      = 3;    // Mini 3,4,5
+const int ELM_PROTOCOL      = 3;    // Mini R50 uses ISO 9141-2 (5 baud init)
 
 extern BluetoothSerial SerialBT;
 
-extern ELM327 elm327;
-
+#define BUFFER_SIZE 50
 #define ELM_PORT SerialBT
 #define ELM_BAUD 38400
 
-#define PID_NUM_STATES 6
-constexpr int8_t PID_ENG_RPM  = 0;
-constexpr int8_t PID_SPEED    = 1;
-constexpr int8_t PID_COOLANT  = 2;
-constexpr int8_t PID_OIL      = 3;
-constexpr int8_t PID_TEMP     = 4;
-constexpr int8_t PID_FUEL     = 5;
-extern int8_t obd_state;
+#define MAX_OBD_PIDS 4
+constexpr int8_t OBD_PID_ENG_RPM  = 0;
+constexpr int8_t OBD_PID_SPEED    = 1;
+constexpr int8_t OBD_PID_COOLANT  = 2;
+constexpr int8_t OBD_PID_BATTERY  = 3;
+
+constexpr int8_t ELM_INIT_STATE_NONE            = 0;
+constexpr int8_t ELM_INIT_STATE_SET_ECHO        = 1;
+constexpr int8_t ELM_INIT_STATE_SET_PROTOCOL    = 2;
+constexpr int8_t ELM_INIT_STATE_INITIALISED     = 3;
+
+constexpr int8_t ELM_REQ_STATE_READY    = 0; // ready for command
+constexpr int8_t ELM_REQ_STATE_WAITING  = 1; // waiting for response
+constexpr int8_t ELM_REQ_STATE_COMPLETE = 2; // completed request
+
+constexpr int8_t ELM_SYS_REQUEST_INFO     = 0;
+constexpr int8_t ELM_SYS_REQUEST_ECHO     = 1;
+constexpr int8_t ELM_SYS_REQUEST_VOLT     = 2;
+constexpr int8_t ELM_SYS_REQUEST_SETPROTO = 3;
+constexpr int8_t ELM_SYS_REQUEST_GETPROTO = 4;
+constexpr int8_t ELM_OBD_REQUEST_PIDS     = 5;
+constexpr int8_t ELM_OBD_REQUEST_RPM      = 6;
+constexpr int8_t ELM_OBD_REQUEST_SPEED    = 7;
+constexpr int8_t ELM_OBD_REQUEST_COOLANT  = 8;
 
 struct PIDInfo {
   const char* name;
   const char* suffix;
   float value;
-  int update_time;
-  int stale_time;
+  unsigned long update_time;
+  unsigned long stale_time;
   unsigned long last_read;
   bool dirty;
   bool stale;
+  int low;
+  int warning;
 };
-
-struct BluetoothDevice {
-  String name;
-  String address;
-};
-
-constexpr int MAX_BLUETOOTH_DEVICES = 10;
-extern BluetoothDevice devices[MAX_BLUETOOTH_DEVICES];
-extern int device_count;
-extern int selected_bt_device;
-extern bool mac_address_configured;
-
-extern uint8_t mac_address[6];
 
 extern PIDInfo pid_info[];
 
-void obd_save();
-bool obd_load();
 void obd_setup();
+void obd_begin();
+void obd_loop();
 void obd_scan();
-void obd_run();
 
 #endif

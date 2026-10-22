@@ -1,12 +1,25 @@
 # Megagauge
 
+OBD2 display intended to be generic but has some specific code to deal with quirks of the ELM327 bluetooth adapter I am using and the ELMulator esp32 device.
+
+Shows a limited number of readings as the Mini R50 that I built this for does not expose much data. May work on other bluetooth elm327 devices and different cars but your mileage may vary.
+
+Currently displays:
+
+* Speed
+* RPM
+* Battery/Voltage
+* Coolant temperature
+
+Long press shows the 'settings' screen and does a (blocking) bluetooth scan.
+
+Currently has a 5 second delay built in to the connection initialisation as the Mini R50 ecu takes a long time to initialise the obd connection.
+
 ## TODO
 
 Lots of code tidying and refactoring
 
 ## Dependencies
-
-ELMduino - https://github.com/PowerBroker2/ELMduino
 
 TFT_eSPI - https://github.com/Bodmer/TFT_eSPI
 
@@ -70,7 +83,7 @@ ENSURE LINES END WITH CARRIAGE RETURN '\r'
 
 0100     supported PIDs
 
-010c     rpm     (A*256+B)/4             010c41 0c 00 02
+010c     rpm     ((A\*256)+B)/4          010c41 0c 00 02
 
 010d     speed   A in kph                010d41 0d 03
 

@@ -1,32 +1,25 @@
 #include <debug.h>
+#include <display.h>
 #include <gauge.h>
 #include <obd.h>
-#include <display.h>
+#include <touch.h>
 
 /*
- * Setup the ports
+ * Setup
  */
 void setup() {
   debug_setup();
   display_setup();
+  touch_setup();
   obd_setup();
 }
 
+/*
+ * Loop
+ */
 void loop() {
-  display_touch();
-  switch (ui_state) {
-    case UI_DISPLAY:
-      {
-        obd_run();
-        display_display();
-      }
-      break;
-    
-    case UI_SETTINGS:
-      {
-        display_settings();
-      }
-      break;
-  }
-  debug_show();
+  debug_loop();
+  display_loop();
+  touch_loop();
+  obd_loop();
 }
