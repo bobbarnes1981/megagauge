@@ -284,19 +284,17 @@ float getBattery() {
   }
   // AT RVAT RV13.5V
   // ParseCharNibble actually parses hex but for 0-9 will be fine
-  int offset = 0;
-  if (buffer[5] == 'A' && buffer[6] == 'T' && buffer[8] == 'R' && buffer[9] == 'R') {
+  if (buffer[5] == 'A' && buffer[6] == 'T' && buffer[8] == 'R' && buffer[9] == 'V') {
     DEBUG_PORT.println("Detected AT RV echo");
     // AT RVAT RV12.8V
-    offset = 10;
+    remove_buffer(0, 5);
   } else {
     DEBUG_PORT.println("No AT RV echo");
     // AT RV12.8V
-    offset = 5;
   }
-  float t = ParseCharNibble(buffer[offset+0]); // tens
-  float u = ParseCharNibble(buffer[offset+1]); // units
-  float f = ParseCharNibble(buffer[offset+3]); // float
+  float t = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0]); // tens
+  float u = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]); // units
+  float f = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+3]); // float
   DEBUG_PORT.printf("battery %d%d.%d\n", t, u, f);
   t = t * 10;
   f = f != 0 ? f/10.0 : f;
