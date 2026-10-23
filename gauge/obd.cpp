@@ -90,6 +90,11 @@ void elm_sys_volt() {
   elm_request("AT RV\r", ELM_SYS_REQUEST_VOLT);
 }
 
+void elm_sys_reset() {
+  // 
+  elm_request("AT Z\r", ELM_SYS_REQUEST_RESET);
+}
+
 void elm_obd_pids() {
   // 01 00
   elm_request("0100\r", ELM_OBD_REQUEST_PIDS);
@@ -366,8 +371,20 @@ bool obd_initialise() {
   switch(elm_init_state) {
     case ELM_INIT_STATE_NONE:
       {
-        DEBUG_PORT.println("Init state NONE, moving to SET_ECHO");
-        elm_init_state = ELM_INIT_STATE_SET_ECHO;
+        DEBUG_PORT.println("Init state NONE, moving to RESET");
+        elm_init_state = ELM_INIT_STATE_RESET;
+      }
+      break;
+
+    case ELM_INIT_STATE_RESET:
+      {
+        elm_sys_reset();
+        if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
+          // TODO: read reset response?
+          elm_request_state = ELM_REQ_STATE_READY;
+          DEBUG_PORT.println("Init state RESET, moving to SET_ECHO");
+          elm_init_state = ELM_INIT_STATE_SET_ECHO;
+        }
       }
       break;
 
@@ -397,7 +414,12 @@ bool obd_initialise() {
 
     case ELM_INIT_STATE_INITIALISED:
       {
-        initialised = true;
+        if (bus_status == BUS_STATUS_ERROR) {
+          DEBUG_PORT.println("bus error, moving to init state NONE");
+          elm_init_state = ELM_INIT_STATE_NONE;
+        } else {
+          initialised = true;
+        }
       }
       break;
   }

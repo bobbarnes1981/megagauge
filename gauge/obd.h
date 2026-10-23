@@ -20,9 +20,10 @@ constexpr int8_t OBD_PID_COOLANT  = 2;
 constexpr int8_t OBD_PID_BATTERY  = 3;
 
 constexpr int8_t ELM_INIT_STATE_NONE            = 0;
-constexpr int8_t ELM_INIT_STATE_SET_ECHO        = 1;
-constexpr int8_t ELM_INIT_STATE_SET_PROTOCOL    = 2;
-constexpr int8_t ELM_INIT_STATE_INITIALISED     = 3;
+constexpr int8_t ELM_INIT_STATE_RESET           = 1;
+constexpr int8_t ELM_INIT_STATE_SET_ECHO        = 2;
+constexpr int8_t ELM_INIT_STATE_SET_PROTOCOL    = 3;
+constexpr int8_t ELM_INIT_STATE_INITIALISED     = 4;
 
 constexpr int8_t ELM_REQ_STATE_READY    = 0; // ready for command
 constexpr int8_t ELM_REQ_STATE_WAITING  = 1; // waiting for response
@@ -33,10 +34,11 @@ constexpr int8_t ELM_SYS_REQUEST_ECHO     = 1;
 constexpr int8_t ELM_SYS_REQUEST_VOLT     = 2;
 constexpr int8_t ELM_SYS_REQUEST_SETPROTO = 3;
 constexpr int8_t ELM_SYS_REQUEST_GETPROTO = 4;
-constexpr int8_t ELM_OBD_REQUEST_PIDS     = 5;
-constexpr int8_t ELM_OBD_REQUEST_RPM      = 6;
-constexpr int8_t ELM_OBD_REQUEST_SPEED    = 7;
-constexpr int8_t ELM_OBD_REQUEST_COOLANT  = 8;
+constexpr int8_t ELM_SYS_REQUEST_RESET    = 5;
+constexpr int8_t ELM_OBD_REQUEST_PIDS     = 6;
+constexpr int8_t ELM_OBD_REQUEST_RPM      = 7;
+constexpr int8_t ELM_OBD_REQUEST_SPEED    = 8;
+constexpr int8_t ELM_OBD_REQUEST_COOLANT  = 9;
 
 constexpr int8_t BUS_STATUS_NONE  = 0;
 constexpr int8_t BUS_STATUS_ERROR = 1;
