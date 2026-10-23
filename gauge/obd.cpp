@@ -373,8 +373,6 @@ bool obd_initialise() {
 
     case ELM_INIT_STATE_SET_ECHO:
       {
-        switch_screen_initialising();
-
         elm_sys_echo(true);
         if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
           // TODO: read echo response?
@@ -394,8 +392,6 @@ bool obd_initialise() {
           DEBUG_PORT.println("Init state SET_PROTOCOL, moving to INITIALISED");
           elm_init_state = ELM_INIT_STATE_INITIALISED;
         }
-
-        switch_screen_display();
       }
       break;
 

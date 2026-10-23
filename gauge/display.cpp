@@ -24,8 +24,6 @@ bool screen_display_init = false;
 bool screen_settings_init = false;
 // is the connecting screen initialised
 bool screen_connecting_init = false;
-// is the initialising screen initialised
-bool screen_initialising_init = false;
 
 #define BACKGROUND  TFT_BLACK
 #define AMBER       0xFC00
@@ -249,30 +247,6 @@ void init_connecting() {
 }
 
 /*
- * draw the initialising screen
- */
-void draw_initialising() {
-
-}
-
-/*
- * initialise the initialising screen
- */
-void init_initialising() {
-  if (!screen_initialising_init) {
-    screen_initialising_init = true;
-
-    tft.fillRoundRect(11, 140, 218, 40, 5, BACKGROUND);
-    tft.drawRoundRect(11, 140, 218, 40, 5, AMBER);
-    
-    tft.setTextColor(AMBER, BACKGROUND);
-    tft.setTextDatum(TL_DATUM);
-
-    tft.drawString("Initialising...", 20, 154, f2);
-  }
-}
-
-/*
  * setup the display
  */
 void display_setup() {
@@ -304,15 +278,6 @@ void display_connecting() {
   draw_connecting();
 }
 
-
-/*
- *
- */
-void display_initialising() {
-  init_initialising();
-  draw_initialising();
-}
-
 /*
  * run the display loop
  */
@@ -333,12 +298,6 @@ void display_loop() {
     case UI_SCREEN_CONNECTING:
       {
         display_connecting();
-      }
-      break;
-
-    case UI_SCREEN_INITIALISING:
-      {
-        display_initialising();
       }
       break;
   }
@@ -369,14 +328,6 @@ void switch_screen_connecting() {
 }
 
 /*
- * switch to show the 'initialising' popover
- */
-void switch_screen_initialising() {
-  ui_screen_state = UI_SCREEN_INITIALISING;
-  screen_initialising_init = false;
-}
-
-/*
  *
  */
 void switch_screen(int8_t state) {
@@ -391,10 +342,6 @@ void switch_screen(int8_t state) {
 
     case UI_SCREEN_CONNECTING:
       switch_screen_connecting();
-      break;
-
-    case UI_SCREEN_INITIALISING:
-      switch_screen_initialising();
       break;
   }
 }
