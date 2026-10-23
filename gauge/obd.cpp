@@ -151,13 +151,6 @@ bool connect() {
   return true;
 }
 
-int get_buffer(int index) {
-  if (index >= 0 && index < pointer && index < BUFFER_SIZE) {
-    return buffer[index];
-  }
-  return 0;
-}
-
 void print_buffer() {
   DEBUG_PORT.printf("Pointer: %d\nBuffer: ");
   for (int i = 0; i < pointer; i++) {
