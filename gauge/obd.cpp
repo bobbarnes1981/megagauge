@@ -291,7 +291,7 @@ float getBattery() {
   }
   // AT RVAT RV13.5V
   // ParseCharNibble actually parses hex but for 0-9 will be fine
-  if (buffer[5] == 'A' && buffer[6] == 'T' && buffer[8] == 'R' && buffer[9] == 'V') {
+  if (pointer >= 9 && buffer[5] == 'A' && buffer[6] == 'T' && buffer[8] == 'R' && buffer[9] == 'V') {
     DEBUG_PORT.println("Detected AT RV echo");
     // AT RVAT RV12.8V
     remove_buffer(0, 5);
