@@ -78,7 +78,6 @@ void elm_sys_echo(bool enabled) {
 void elm_sys_set_protocol_3() {
   // 
   elm_request("AT SP 3\r", ELM_SYS_REQUEST_SETPROTO);
-  delay(5000); // is this needed to wait for slow init
 }
 
 void elm_sys_get_protocol() {
@@ -150,6 +149,21 @@ bool connect() {
   DEBUG_PORT.println("SUCCESS");
   bt_connected = true;
   return true;
+}
+
+int get_buffer(int index) {
+  if (index >= 0 && index < pointer && index < BUFFER_SIZE) {
+    return buffer[index];
+  }
+  return 0;
+}
+
+void print_buffer() {
+  DEBUG_PORT.printf("Pointer: %d\nBuffer: ");
+  for (int i = 0; i < pointer; i++) {
+    DEBUG_PORT.write(buffer[i]);
+  }
+  DEBUG_PORT.println();
 }
 
 void remove_buffer(int start, int length) {
@@ -292,9 +306,10 @@ float getBattery() {
     DEBUG_PORT.println("No AT RV echo");
     // AT RV12.8V
   }
-  float t = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+0]); // tens
-  float u = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+1]); // units
-  float f = ParseCharNibble(buffer[PID_ECHO_OFFSET+PID_CMD_OFFSET+3]); // float
+  print_buffer();
+  float t = ParseCharNibble(buffer[5+0]); // tens
+  float u = ParseCharNibble(buffer[5+1]); // units
+  float f = ParseCharNibble(buffer[5+3]); // float
   DEBUG_PORT.printf("battery %d%d.%d\n", t, u, f);
   t = t * 10;
   f = f != 0 ? f/10.0 : f;
@@ -369,6 +384,7 @@ bool obd_initialise() {
 
         elm_sys_echo(true);
         if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
+          // TODO: read echo response?
           elm_request_state = ELM_REQ_STATE_READY;
           DEBUG_PORT.println("Init state SET_ECHO, moving to SET_PROTOCOL");
           elm_init_state = ELM_INIT_STATE_SET_PROTOCOL;
@@ -380,6 +396,7 @@ bool obd_initialise() {
       {
         elm_sys_set_protocol_3();
         if (elm_request_state == ELM_REQ_STATE_COMPLETE) {
+          // TODO: read protocol response?
           elm_request_state = ELM_REQ_STATE_READY;
           DEBUG_PORT.println("Init state SET_PROTOCOL, moving to INITIALISED");
           elm_init_state = ELM_INIT_STATE_INITIALISED;
@@ -406,6 +423,7 @@ int8_t obd_detect_response() {
   /*
    * initial request can include 'BUS INIT: OK' after pid echo e.g. 010CBUS INIT: OK41 0C 00 00 >
    * pid requests can include 'BUS INIT: ERROR' after pid echo e.g. 010CBUS INIT: ERROR >
+   * TODO: is BUS INIT response returned for AT requests as well as PID?
    */
   if (pointer >= 15 && buffer[14] == 'O' && buffer[15] == 'K') { // plenty of scope for this to go wrong
     DEBUG_PORT.println("bus init ok");
@@ -449,12 +467,9 @@ void obd_process_bytes() {
     if (b == '>') {
       DEBUG_PORT.println("detected '>'");
       obd_detect_response();
-      for (int i = 0; i < pointer; i++) {
-        DEBUG_PORT.write(buffer[i]);
-      }
+      print_buffer();
       pointer = 0;
       elm_request_state = ELM_REQ_STATE_COMPLETE;
-      DEBUG_PORT.println();
     }
   }
 }
